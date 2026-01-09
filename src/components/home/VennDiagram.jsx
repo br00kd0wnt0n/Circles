@@ -276,50 +276,96 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
             const isInHighlightedCircle = highlightedCircles.some(c =>
               household.circleIds?.includes(c)
             );
+            const hasNote = !!household.status.note;
+            // Get the color from the household's first circle
+            const pulseColor = household.circleIds?.length > 0
+              ? circles.find(c => c.id === household.circleIds[0])?.color || '#9CAF88'
+              : '#9CAF88';
 
             return (
-              <motion.button
+              <div
                 key={household.id}
-                onClick={() => isAvailable && onSelectHousehold(household)}
-                onMouseEnter={() => setHoveredHousehold(household.id)}
-                onMouseLeave={() => setHoveredHousehold(null)}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{
-                  opacity: 1,
-                  scale: isHovered || isSelected ? 1.3 : 1,
-                  zIndex: isHovered || isSelected ? 30 : 10
-                }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                className={`absolute w-9 h-9 rounded-full flex items-center justify-center text-sm shadow-md border-2 transition-all ${
-                  isAvailable
-                    ? isSelected
-                      ? 'bg-[#9CAF88] border-white cursor-pointer'
-                      : isHovered
-                      ? 'bg-white border-[#9CAF88] cursor-pointer shadow-lg'
-                      : 'bg-white border-white cursor-pointer hover:shadow-lg'
-                    : 'bg-gray-100 border-gray-200 opacity-40 cursor-not-allowed'
-                }`}
+                className="absolute"
                 style={{
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
                   transform: 'translate(-50%, -50%)',
-                  boxShadow: isInHighlightedCircle && !isHovered && !isSelected
-                    ? '0 0 0 2px rgba(156, 175, 136, 0.5)'
-                    : undefined
+                  zIndex: isHovered || isSelected ? 30 : 10
                 }}
               >
-                {household.members[0]?.avatar || '👥'}
-                <span className="absolute -bottom-0.5 -right-0.5">
-                  <StatusDot status={household.status.state} size="sm" />
-                </span>
-
-                {/* Multi-circle indicator */}
-                {household.circleIds?.length > 1 && (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#8B5CF6] text-white text-[8px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                    {household.circleIds.length}
-                  </span>
+                {/* Pulse rings for households with notes */}
+                {hasNote && isAvailable && (
+                  <>
+                    <motion.div
+                      className="absolute inset-0 rounded-full border"
+                      style={{ margin: '-4px', borderColor: pulseColor }}
+                      animate={{
+                        scale: [1, 1.6, 2],
+                        opacity: [0, 0.4, 0]
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        ease: 'linear',
+                        times: [0, 0.25, 1]
+                      }}
+                    />
+                    <motion.div
+                      className="absolute inset-0 rounded-full border"
+                      style={{ margin: '-4px', borderColor: pulseColor }}
+                      animate={{
+                        scale: [1, 1.6, 2],
+                        opacity: [0, 0.4, 0]
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        ease: 'linear',
+                        times: [0, 0.25, 1],
+                        delay: 1.25
+                      }}
+                    />
+                  </>
                 )}
-              </motion.button>
+
+                <motion.button
+                  onClick={() => isAvailable && onSelectHousehold(household)}
+                  onMouseEnter={() => setHoveredHousehold(household.id)}
+                  onMouseLeave={() => setHoveredHousehold(null)}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{
+                    opacity: 1,
+                    scale: isHovered || isSelected ? 1.3 : 1
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm shadow-md border-2 transition-all ${
+                    isAvailable
+                      ? isSelected
+                        ? 'bg-[#9CAF88] border-white cursor-pointer'
+                        : isHovered
+                        ? 'bg-white border-[#9CAF88] cursor-pointer shadow-lg'
+                        : 'bg-white border-white cursor-pointer hover:shadow-lg'
+                      : 'bg-gray-100 border-gray-200 opacity-40 cursor-not-allowed'
+                  }`}
+                  style={{
+                    boxShadow: isInHighlightedCircle && !isHovered && !isSelected
+                      ? '0 0 0 2px rgba(156, 175, 136, 0.5)'
+                      : undefined
+                  }}
+                >
+                  {household.members[0]?.avatar || '👥'}
+                  <span className="absolute -bottom-0.5 -right-0.5">
+                    <StatusDot status={household.status.state} size="sm" />
+                  </span>
+
+                  {/* Multi-circle indicator */}
+                  {household.circleIds?.length > 1 && (
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#8B5CF6] text-white text-[8px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                      {household.circleIds.length}
+                    </span>
+                  )}
+                </motion.button>
+              </div>
             );
           })
         )}
