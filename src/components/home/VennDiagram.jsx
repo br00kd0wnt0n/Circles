@@ -315,7 +315,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
 
                 {/* Multi-circle indicator */}
                 {household.circleIds?.length > 1 && (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#F4A69A] text-white text-[8px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#8B5CF6] text-white text-[8px] font-bold rounded-full flex items-center justify-center shadow-sm">
                     {household.circleIds.length}
                   </span>
                 )}

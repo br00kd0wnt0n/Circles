@@ -52,27 +52,30 @@ export function HomeScreen({ myHousehold, myStatus, setMyStatus, onCreateHangout
           <span>Open</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
           <span>Busy</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-[#F4A69A] text-white text-[7px] font-bold flex items-center justify-center">2</span>
+          <span className="w-3 h-3 rounded-full bg-[#8B5CF6] text-white text-[7px] font-bold flex items-center justify-center">2</span>
           <span>In 2+ circles</span>
         </div>
       </div>
 
+      {/* Start Hangout Button */}
+      <div className="mt-6 flex justify-center">
+        <motion.button
+          onClick={() => onCreateHangout()}
+          className="flex items-center gap-2 px-6 py-3 bg-[#F4A69A] text-white rounded-full shadow-md font-medium"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Plus size={20} />
+          <span>Make Plans</span>
+        </motion.button>
+      </div>
+
       {/* Local Offers */}
       <LocalOffers />
-
-      {/* Floating Action Button */}
-      <motion.button
-        onClick={() => onCreateHangout()}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-[#F4A69A] text-white rounded-full shadow-lg flex items-center justify-center float-animation z-20"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Plus size={28} />
-      </motion.button>
 
       {/* Status Editor Modal - for adding notes */}
       <StatusEditor
