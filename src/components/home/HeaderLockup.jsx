@@ -1,6 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, Check, Circle, X, MessageCircle, Pencil } from 'lucide-react';
+
+// Friendly greeting variants by time of day
+const greetingVariants = {
+  morning: [
+    "Good morning! Let's see who's around",
+    "Morning! Ready to make plans?",
+    "Good morning! Who's free today?",
+    "Rise and shine! Let's connect",
+    "Morning! What's everyone up to?",
+  ],
+  afternoon: [
+    "Good afternoon! Let's see what everyone is up to",
+    "Afternoon! Anyone free for plans?",
+    "Good afternoon! Time to connect",
+    "Hey there! Who's available?",
+    "Afternoon! Let's make something happen",
+  ],
+  evening: [
+    "Good evening! See who's around",
+    "Evening! Any plans brewing?",
+    "Good evening! Let's check in",
+    "Hey! Who's free tonight?",
+    "Evening! Time to connect",
+  ],
+};
 
 const statusOptions = [
   { id: 'available', label: 'Available', icon: Check, color: '#22C55E', bgColor: '#DCFCE7', circleColor: '#86EFAC' },
@@ -39,12 +64,16 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
     }
   };
 
-  const getGreeting = () => {
+  const greeting = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
+    let timeOfDay;
+    if (hour < 12) timeOfDay = 'morning';
+    else if (hour < 17) timeOfDay = 'afternoon';
+    else timeOfDay = 'evening';
+
+    const variants = greetingVariants[timeOfDay];
+    return variants[Math.floor(Math.random() * variants.length)];
+  }, []);
 
   const currentStatus = statusOptions.find(s => s.id === status.state) || statusOptions[0];
 
@@ -65,7 +94,7 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
         >
           {/* Top row: Greeting + Settings */}
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-[#6B7280]">{getGreeting()}</p>
+            <p className="text-sm text-[#6B7280]">{greeting}</p>
             <button
               onClick={onOpenSettings}
               className="p-2 -mr-2 rounded-full hover:bg-white/50 transition-colors"
