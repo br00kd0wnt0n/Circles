@@ -12,6 +12,7 @@ import { useTheme } from './context/ThemeContext';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
+  const [backgroundView, setBackgroundView] = useState('home'); // tracks home/circles for when activity is shown
   const [showCreateHangout, setShowCreateHangout] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [preselectedFriends, setPreselectedFriends] = useState([]);
@@ -29,6 +30,15 @@ function App() {
   } = useAppState();
 
   const { theme } = useTheme();
+
+  const isActivityView = activeTab === 'activity';
+
+  const handleTabChange = (tab) => {
+    if (tab === 'home' || tab === 'circles') {
+      setBackgroundView(tab);
+    }
+    setActiveTab(tab);
+  };
 
   const handleCreateHangout = (friendIds = []) => {
     setPreselectedFriends(friendIds);
@@ -63,27 +73,36 @@ function App() {
       >
         {/* Main Content */}
         <main className="pb-20 relative z-10 h-full overflow-hidden">
-          {/* Unified Home/Circles View - seamless transition */}
-          {(activeTab === 'home' || activeTab === 'circles') && (
+          {/* Unified Home/Circles View - always rendered, blurs when activity is shown */}
+          <motion.div
+            className="h-full"
+            animate={{
+              filter: isActivityView ? 'blur(20px)' : 'blur(0px)',
+              scale: isActivityView ? 1.05 : 1,
+              opacity: isActivityView ? 0.6 : 1,
+            }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          >
             <UnifiedHomeCircles
-              viewMode={activeTab}
+              viewMode={isActivityView ? backgroundView : activeTab}
               myHousehold={myHousehold}
               myStatus={myStatus}
               setMyStatus={setMyStatus}
               onCreateHangout={handleCreateHangout}
               onOpenSettings={() => setShowSettings(true)}
             />
-          )}
+          </motion.div>
 
-          {/* Activity Screen - separate view */}
-          <AnimatePresence mode="wait">
-            {activeTab === 'activity' && (
+          {/* Activity Screen - overlay on top of blurred background */}
+          <AnimatePresence>
+            {isActivityView && (
               <motion.div
                 key="activity"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                className="absolute inset-0 z-20 overflow-y-auto"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 40 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
               >
                 <ActivityScreen
                   invites={invites}
@@ -95,7 +114,7 @@ function App() {
         </main>
 
         {/* Bottom Navigation */}
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
         {/* Create Hangout Modal */}
         <CreateHangout

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InviteCard } from './InviteCard';
 import { Calendar, Send, Inbox } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const tabs = [
   { id: 'all', label: 'All', icon: Calendar },
@@ -10,6 +11,8 @@ const tabs = [
 ];
 
 export function ActivityScreen({ invites, onRespond }) {
+  const { theme, themeId } = useTheme();
+  const isDark = themeId === 'midnight';
   const [activeTab, setActiveTab] = useState('all');
 
   // Filter invites based on tab
@@ -25,10 +28,10 @@ export function ActivityScreen({ invites, onRespond }) {
   const confirmedInvites = filteredInvites.filter(i => i.status === 'confirmed');
 
   return (
-    <div className="px-4 pt-6 pb-24">
+    <div className="px-4 pt-6 pb-24 h-full">
       <header className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight text-[#1F2937]">Activity</h1>
-        <p className="text-sm text-[#6B7280] mt-1">
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: theme.textPrimary }}>Activity</h1>
+        <p className="text-sm mt-1" style={{ color: theme.textSecondary }}>
           {invites.length === 0
             ? 'No hangouts yet - create one to get started!'
             : `${invites.length} hangout${invites.length === 1 ? '' : 's'}`}
@@ -42,23 +45,28 @@ export function ActivityScreen({ invites, onRespond }) {
           const count = tab.id === 'all' ? invites.length :
                         tab.id === 'sent' ? invites.filter(i => i.createdBy === 'howard' || !i.createdBy).length :
                         invites.filter(i => i.createdBy && i.createdBy !== 'howard').length;
+          const isActive = activeTab === tab.id;
 
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-[#9CAF88] text-white'
-                  : 'bg-white text-[#6B7280] border border-gray-200'
-              }`}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap backdrop-blur-md"
+              style={{
+                backgroundColor: isActive ? theme.cta : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'),
+                color: isActive ? '#FFFFFF' : theme.textSecondary,
+                border: isActive ? 'none' : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
+              }}
             >
               <Icon size={16} />
               {tab.label}
               {count > 0 && (
-                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
-                  activeTab === tab.id ? 'bg-white/20' : 'bg-gray-100'
-                }`}>
+                <span
+                  className="ml-1 px-1.5 py-0.5 rounded-full text-xs"
+                  style={{
+                    backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')
+                  }}
+                >
                   {count}
                 </span>
               )}
@@ -80,12 +88,13 @@ export function ActivityScreen({ invites, onRespond }) {
             <motion.div
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="w-20 h-20 rounded-full bg-[#E8F0E3] flex items-center justify-center mx-auto mb-4"
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: `${theme.cta}20` }}
             >
-              <Calendar size={36} className="text-[#9CAF88]" />
+              <Calendar size={36} style={{ color: theme.cta }} />
             </motion.div>
-            <h3 className="font-semibold text-[#1F2937] mb-2">No hangouts yet</h3>
-            <p className="text-sm text-[#6B7280] max-w-[240px] mx-auto">
+            <h3 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>No hangouts yet</h3>
+            <p className="text-sm max-w-[240px] mx-auto" style={{ color: theme.textSecondary }}>
               Tap the + button to create your first hangout with friends from your circles!
             </p>
           </motion.div>
@@ -96,7 +105,7 @@ export function ActivityScreen({ invites, onRespond }) {
             animate={{ opacity: 1 }}
             className="text-center py-12"
           >
-            <p className="text-[#6B7280]">No {activeTab} hangouts</p>
+            <p style={{ color: theme.textSecondary }}>No {activeTab} hangouts</p>
           </motion.div>
         ) : (
           <motion.div
@@ -108,8 +117,8 @@ export function ActivityScreen({ invites, onRespond }) {
             {/* Pending Section */}
             {pendingInvites.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-[#6B7280] mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: theme.textSecondary }}>
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: theme.statusOpen }} />
                   Pending ({pendingInvites.length})
                 </h3>
                 <div className="space-y-3">
@@ -134,8 +143,8 @@ export function ActivityScreen({ invites, onRespond }) {
             {/* Confirmed Section */}
             {confirmedInvites.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-[#6B7280] mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: theme.textSecondary }}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.statusAvailable }} />
                   Confirmed ({confirmedInvites.length})
                 </h3>
                 <div className="space-y-3">
