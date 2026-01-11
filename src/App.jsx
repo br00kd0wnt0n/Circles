@@ -53,7 +53,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen transition-colors duration-500" style={{ backgroundColor: theme.background }}>
+    <div className="h-full transition-colors duration-500" style={{ backgroundColor: theme.background }}>
       {/* Welcome Greeting - shows on first load */}
       {showWelcome && (
         <WelcomeGreeting
@@ -66,10 +66,14 @@ function App() {
       {/* Weather Background */}
       <WeatherBackground weather={weather} />
 
-      {/* Phone Frame for Demo */}
+      {/* App Container - full screen on mobile, centered frame on desktop */}
       <div
-        className="max-w-[430px] mx-auto h-screen relative backdrop-blur-sm shadow-2xl overflow-hidden transition-colors duration-500"
-        style={{ backgroundColor: `rgba(${theme.backgroundRgb}, 0.8)` }}
+        className="w-full h-full sm:max-w-[430px] sm:mx-auto relative sm:shadow-2xl overflow-hidden transition-colors duration-500"
+        style={{
+          backgroundColor: `rgba(${theme.backgroundRgb}, 0.95)`,
+          paddingTop: 'var(--safe-area-top)',
+          paddingBottom: 'var(--safe-area-bottom)',
+        }}
       >
         {/* Main Content */}
         <main className="pb-20 relative z-10 h-full overflow-hidden">

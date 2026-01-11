@@ -10,10 +10,20 @@
   --white: #FFFFFF;
   --text-primary: #1F2937;
   --text-secondary: #6B7280;
+  /* Safe area insets for notched phones */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
 * {
   box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -23,6 +33,20 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent pull-to-refresh and overscroll */
+  overscroll-behavior: none;
+  /* Prevent text selection on touch */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent touch callouts */
+  -webkit-touch-callout: none;
+  /* Smooth touch scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent browser gestures interfering */
+#root {
+  touch-action: pan-y;
 }
 
 ::-webkit-scrollbar {

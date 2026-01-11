@@ -64,10 +64,11 @@ export function BottomNav({ activeTab, onTabChange }) {
       className="absolute bottom-0 left-0 right-0 border-t z-30 transition-colors duration-500"
       style={{
         backgroundColor: isDark ? '#1E293B' : 'white',
-        borderColor: isDark ? '#334155' : '#E5E7EB'
+        borderColor: isDark ? '#334155' : '#E5E7EB',
+        paddingBottom: 'max(8px, var(--safe-area-bottom))'
       }}
     >
-      <div className="flex justify-center items-center gap-16 h-16 max-w-md mx-auto pb-2">
+      <div className="flex justify-center items-center gap-12 sm:gap-16 h-14 max-w-md mx-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -76,7 +77,7 @@ export function BottomNav({ activeTab, onTabChange }) {
             <motion.button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="flex items-center justify-center p-2 transition-colors"
+              className="flex items-center justify-center p-3 min-w-[48px] min-h-[48px] transition-colors"
               style={{ color: isActive ? theme.cta : theme.textSecondary }}
               whileTap={{ scale: 0.9 }}
             >
