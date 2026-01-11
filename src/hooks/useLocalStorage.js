@@ -34,7 +34,27 @@ export function useAppState() {
     note: null
   });
 
-  const [invites, setInvites] = useLocalStorage('circles-invites', []);
+  // Default example hangout
+  const defaultInvites = [
+    {
+      id: 'example-1',
+      title: 'Backyard BBQ',
+      activity: 'Grill out and games',
+      date: 'Saturday',
+      time: '4:00 PM',
+      location: 'Our place',
+      invitedHouseholds: ['barretts', 'sachs'],
+      createdBy: 'downtons',
+      createdAt: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+      responses: {
+        'barretts': 'accepted',
+        'sachs': 'pending'
+      },
+      status: 'sent'
+    }
+  ];
+
+  const [invites, setInvites] = useLocalStorage('circles-invites', defaultInvites);
 
   const addInvite = (invite) => {
     const newInvite = {

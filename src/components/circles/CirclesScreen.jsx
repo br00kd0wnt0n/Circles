@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Users, ChevronDown, Link2, Pencil, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { circles, friendHouseholds } from '../../data/seedData';
+import { VennDiagram } from '../home/VennDiagram';
 import { StatusDot } from '../ui/StatusDot';
 import { Button } from '../ui/Button';
+import { HouseholdDetail } from '../home/HouseholdDetail';
 
 // Convert hex to rgba
 const hexToRgba = (hex, alpha) => {
@@ -15,6 +17,7 @@ const hexToRgba = (hex, alpha) => {
 
 export function CirclesScreen({ onCreateHangout }) {
   const [selectedCircle, setSelectedCircle] = useState(null);
+  const [selectedHousehold, setSelectedHousehold] = useState(null);
   const [editingCircle, setEditingCircle] = useState(null);
 
   const getCircleMembers = (circleId) => {
@@ -24,137 +27,69 @@ export function CirclesScreen({ onCreateHangout }) {
   const selectedCircleData = circles.find(c => c.id === selectedCircle);
   const selectedMembers = selectedCircle ? getCircleMembers(selectedCircle) : [];
 
+  // Calculate available friends
+  const availableFriends = useMemo(() => {
+    const available = friendHouseholds.filter(h =>
+      h.status.state === 'available' || h.status.state === 'open'
+    );
+    return { available: available.length, total: friendHouseholds.length };
+  }, []);
+
   return (
     <div className="pb-24">
-      <header className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight text-[#1F2937]">Your Circles</h1>
-        <p className="text-sm text-[#6B7280] mt-1">Tap a circle to see members</p>
-      </header>
+      {/* Info Bar - same as Home */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-start justify-between px-1 mb-4"
+      >
+        <div className="text-sm text-[#6B7280]">
+          <span className="font-medium">72</span>
+          <div className="text-xs">Sunny</div>
+        </div>
+        <div className="text-sm text-[#6B7280] text-right">
+          <span className="font-medium">{availableFriends.available}</span>
+          <span className="mx-0.5">/</span>
+          <span>{availableFriends.total}</span>
+          <div className="text-xs">Friends Available</div>
+        </div>
+      </motion.div>
 
-      {/* Circles displayed in a loose quadrant layout */}
-      <div className="grid grid-cols-2 gap-x-2 gap-y-6">
-        {circles.map((circle, index) => {
-          const members = getCircleMembers(circle.id);
-          const availableCount = members.filter(m => m.status.state !== 'busy').length;
-          const isSelected = selectedCircle === circle.id;
+      {/* Venn Diagram - organized view of contacts in their circles */}
+      <VennDiagram
+        onSelectHousehold={(household) => setSelectedHousehold(household)}
+        selectedHousehold={selectedHousehold}
+        onSelectCircle={(circleId) => setSelectedCircle(circleId)}
+      />
 
-          // Offset alternating rows for organic feel
-          const isOddRow = Math.floor(index / 2) % 2 === 1;
-
-          return (
-            <motion.div
-              key={circle.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              className={`flex flex-col items-center ${isOddRow ? 'mt-8' : ''}`}
-            >
-              {/* The Circle */}
-              <motion.button
-                onClick={() => setSelectedCircle(isSelected ? null : circle.id)}
-                className="relative"
-                whileTap={{ scale: 0.95 }}
-              >
-                {/* Main circle */}
-                <motion.div
-                  className="w-44 h-44 rounded-full flex flex-col items-center justify-center relative"
-                  style={{
-                    backgroundColor: hexToRgba(circle.color, 0.2),
-                    border: isSelected ? `2px solid ${circle.color}` : `1.5px solid ${hexToRgba(circle.color, 0.4)}`
-                  }}
-                  animate={{
-                    scale: isSelected ? 1.05 : 1,
-                    boxShadow: isSelected
-                      ? `0 8px 30px ${hexToRgba(circle.color, 0.4)}`
-                      : `0 4px 15px ${hexToRgba(circle.color, 0.15)}`
-                  }}
-                >
-                  {/* Circle name */}
-                  <p
-                    className="font-semibold text-base text-center px-4 leading-tight"
-                    style={{ color: circle.color }}
-                  >
-                    {circle.name}
-                  </p>
-
-                  {/* Member count */}
-                  <p className="text-xs text-[#6B7280] mt-1.5">
-                    {members.length} families
-                  </p>
-
-                  {/* Available indicator */}
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[11px] text-green-600 font-medium">{availableCount} available</span>
-                  </div>
-
-                  {/* Member avatars around the edge */}
-                  {members.slice(0, 6).map((member, i) => {
-                    const angle = (i * 60 - 90) * (Math.PI / 180);
-                    const radius = 80;
-                    const x = Math.cos(angle) * radius;
-                    const y = Math.sin(angle) * radius;
-
-                    return (
-                      <div
-                        key={member.id}
-                        className="absolute w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center text-lg border-2"
-                        style={{
-                          transform: `translate(${x}px, ${y}px)`,
-                          borderColor: member.status.state === 'busy' ? '#FDA4AF' :
-                                       member.status.state === 'open' ? '#FCD34D' : '#86EFAC'
-                        }}
-                      >
-                        {member.members[0]?.avatar}
-                      </div>
-                    );
-                  })}
-
-                  {members.length > 6 && (
-                    <div
-                      className="absolute w-9 h-9 rounded-full bg-[#F4F4F5] shadow-md flex items-center justify-center text-xs font-medium text-[#6B7280]"
-                      style={{
-                        transform: `translate(${Math.cos((6 * 60 - 90) * (Math.PI / 180)) * 80}px, ${Math.sin((6 * 60 - 90) * (Math.PI / 180)) * 80}px)`
-                      }}
-                    >
-                      +{members.length - 6}
-                    </div>
-                  )}
-                </motion.div>
-
-                {/* Edit button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingCircle(circle.id);
-                  }}
-                  className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center hover:bg-gray-50"
-                >
-                  <Pencil size={14} className="text-[#6B7280]" />
-                </button>
-              </motion.button>
-
-            </motion.div>
-          );
-        })}
-
-        {/* Add New Circle - matches row offset of its position */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className={`flex flex-col items-center ${Math.floor(circles.length / 2) % 2 === 1 ? 'mt-8' : ''}`}
+      {/* Action Buttons */}
+      <div className="mt-6 flex justify-center gap-2">
+        <motion.button
+          onClick={() => onCreateHangout()}
+          className="flex items-center gap-2 px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium text-sm border border-gray-200"
+          whileHover={{ backgroundColor: '#e5e5e5' }}
+          whileTap={{ scale: 0.98 }}
         >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="w-44 h-44 rounded-full border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 text-[#6B7280] hover:border-[#9CAF88] hover:text-[#9CAF88] transition-colors bg-white/30"
-          >
-            <Plus size={36} />
-            <span className="text-sm font-medium">Add Circle</span>
-          </motion.button>
-        </motion.div>
+          <Plus size={18} />
+          <span>Make Plans</span>
+        </motion.button>
+
+        <motion.button
+          className="flex items-center justify-center px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium text-sm border border-gray-200"
+          whileHover={{ backgroundColor: '#e5e5e5' }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <span>Mic</span>
+        </motion.button>
       </div>
+
+      {/* Household Detail Sheet */}
+      <HouseholdDetail
+        household={selectedHousehold}
+        isOpen={!!selectedHousehold}
+        onClose={() => setSelectedHousehold(null)}
+        onInvite={onCreateHangout}
+      />
 
       {/* Bottom Sheet for Selected Circle */}
       <AnimatePresence>

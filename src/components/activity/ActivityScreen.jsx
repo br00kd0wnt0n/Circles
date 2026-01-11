@@ -25,7 +25,7 @@ export function ActivityScreen({ invites, onRespond }) {
   const confirmedInvites = filteredInvites.filter(i => i.status === 'confirmed');
 
   return (
-    <div className="pb-24">
+    <div className="px-4 pt-6 pb-24">
       <header className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight text-[#1F2937]">Activity</h1>
         <p className="text-sm text-[#6B7280] mt-1">

@@ -1,22 +1,29 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Mic, X } from 'lucide-react';
-import { VennDiagram } from './VennDiagram';
+import { ScatteredContacts } from './ScatteredContacts';
 import { HeaderLockup } from './HeaderLockup';
 import { StatusEditor } from './StatusEditor';
 import { HouseholdDetail } from './HouseholdDetail';
 import { LocalOffers } from './LocalOffers';
-import { getWeatherSuggestion } from '../../data/seedData';
+import { friendHouseholds } from '../../data/seedData';
 
 export function HomeScreen({ myHousehold, myStatus, setMyStatus, onCreateHangout, onOpenSettings }) {
   const [showStatusEditor, setShowStatusEditor] = useState(false);
   const [selectedHousehold, setSelectedHousehold] = useState(null);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
-  const weather = useMemo(() => getWeatherSuggestion(), []);
+
+  // Calculate available friends
+  const availableFriends = useMemo(() => {
+    const available = friendHouseholds.filter(h =>
+      h.status.state === 'available' || h.status.state === 'open'
+    );
+    return { available: available.length, total: friendHouseholds.length };
+  }, []);
 
   return (
     <div className="pb-24">
-      {/* Unified Header Lockup */}
+      {/* Header with green arc */}
       <HeaderLockup
         household={myHousehold}
         status={myStatus}
@@ -24,65 +31,54 @@ export function HomeScreen({ myHousehold, myStatus, setMyStatus, onCreateHangout
         onOpenSettings={onOpenSettings}
       />
 
-      {/* Weather Suggestion - Compact */}
+      {/* Info Bar - Weather left, Friends Available right */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#F4F4F5] to-transparent rounded-xl mb-4"
+        className="flex items-start justify-between px-1 mb-4"
       >
-        <span className="text-lg">{weather.icon}</span>
-        <p className="text-sm text-[#6B7280] flex-1">{weather.weather} — {weather.suggestion}</p>
+        <div className="text-sm text-[#6B7280]">
+          <span className="font-medium">72</span>
+          <div className="text-xs">Sunny</div>
+        </div>
+        <div className="text-sm text-[#6B7280] text-right">
+          <span className="font-medium">{availableFriends.available}</span>
+          <span className="mx-0.5">/</span>
+          <span>{availableFriends.total}</span>
+          <div className="text-xs">Friends Available</div>
+        </div>
       </motion.div>
 
-      {/* Venn Diagram */}
-      <div>
-        <VennDiagram
-          onSelectHousehold={(household) => setSelectedHousehold(household)}
-          selectedHousehold={selectedHousehold}
-        />
-      </div>
+      {/* Scattered Contacts - Home Level 1 */}
+      <ScatteredContacts
+        onSelectHousehold={(household) => setSelectedHousehold(household)}
+        selectedHousehold={selectedHousehold}
+      />
 
-      {/* Legend - compact */}
-      <div className="mt-8 flex items-center justify-center gap-5 text-[10px] text-[#6B7280]">
-        <div className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-          <span>Available</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-          <span>Open</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-          <span>Busy</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-[#8B5CF6] text-white text-[7px] font-bold flex items-center justify-center">2</span>
-          <span>In 2+ circles</span>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="mt-6 flex justify-center gap-3">
+      {/* Action Buttons - matching wireframe style */}
+      <div className="mt-8 flex justify-center gap-2">
         <motion.button
           onClick={() => onCreateHangout()}
-          className="flex items-center gap-2 px-6 py-3 bg-[#F4A69A] text-white rounded-full shadow-md font-medium"
-          whileHover={{ scale: 1.02 }}
+          className="flex items-center gap-2 px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium text-sm border border-gray-200"
+          whileHover={{ backgroundColor: '#e5e5e5' }}
           whileTap={{ scale: 0.98 }}
         >
-          <Plus size={20} />
+          <Plus size={18} />
           <span>Make Plans</span>
         </motion.button>
 
         <motion.button
           onClick={() => setShowVoiceMode(true)}
-          className="flex items-center justify-center w-12 h-12 bg-white border border-gray-200 rounded-full shadow-md text-[#6B7280] hover:text-[#9CAF88] hover:border-[#9CAF88] transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          className="flex items-center justify-center w-12 h-12 bg-gray-100 text-gray-700 rounded-xl border border-gray-200"
+          whileHover={{ backgroundColor: '#e5e5e5' }}
+          whileTap={{ scale: 0.98 }}
         >
           <Mic size={20} />
         </motion.button>
       </div>
+
+      {/* Local Business Offers */}
+      <LocalOffers />
 
       {/* Voice Mode Dialog */}
       <AnimatePresence>
@@ -154,9 +150,6 @@ export function HomeScreen({ myHousehold, myStatus, setMyStatus, onCreateHangout
           </>
         )}
       </AnimatePresence>
-
-      {/* Local Offers */}
-      <LocalOffers />
 
       {/* Status Editor Modal - for adding notes */}
       <StatusEditor

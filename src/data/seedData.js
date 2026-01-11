@@ -1,6 +1,6 @@
 export const currentHousehold = {
-  id: 'howard',
-  householdName: 'The Howards',
+  id: 'downton',
+  householdName: 'The Downtons',
   members: [
     { id: 'brook', name: 'Brook', role: 'parent', avatar: '👨' },
     { id: 'hettie', name: 'Hettie', role: 'parent', avatar: '👩' },

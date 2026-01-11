@@ -109,7 +109,7 @@ export function HouseholdDetail({ household, isOpen, onClose, onInvite }) {
             )}
 
             {/* Actions */}
-            <div className="p-6 pt-2 border-t border-gray-100 flex gap-3">
+            <div className="p-6 pt-2 pb-8 border-t border-gray-100 flex gap-3">
               <Button variant="secondary" className="flex-1 flex items-center justify-center gap-2">
                 <MessageCircle size={18} />
                 Message
@@ -126,6 +126,8 @@ export function HouseholdDetail({ household, isOpen, onClose, onInvite }) {
                 Invite to Hangout
               </Button>
             </div>
+            {/* Safe area padding for nav bar */}
+            <div className="h-16" />
           </motion.div>
         </>
       )}
