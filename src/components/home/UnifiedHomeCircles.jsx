@@ -450,10 +450,14 @@ export function UnifiedHomeCircles({
       </AnimatePresence>
 
       {/* Circle Detail - Full Screen Zoom */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         {selectedCircle && selectedCircleData && (
           <motion.div
             className="absolute inset-0 z-50 flex flex-col overflow-hidden"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
           >
             {/* Expanding Circle Background - zooms from circle position */}
             <motion.div
@@ -471,6 +475,7 @@ export function UnifiedHomeCircles({
                 x: '-50%',
                 y: '-50%',
                 scale: 1,
+                opacity: 1,
               }}
               animate={{
                 width: 60,
@@ -478,15 +483,18 @@ export function UnifiedHomeCircles({
                 x: '-50%',
                 y: '-50%',
                 scale: 25,
+                opacity: 1,
               }}
               exit={{
-                scale: 1,
+                scale: 3,
+                opacity: 0,
               }}
               transition={{
                 type: 'spring',
                 damping: 28,
                 stiffness: 180,
                 mass: 0.8,
+                opacity: { duration: 0.35, ease: 'easeOut' }
               }}
             />
 
@@ -499,7 +507,7 @@ export function UnifiedHomeCircles({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ delay: 0.15, duration: 0.2 }}
+              transition={{ duration: 0.2 }}
             />
 
             {/* Header with back button */}
