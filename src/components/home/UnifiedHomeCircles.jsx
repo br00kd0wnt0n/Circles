@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Mic, X, ChevronLeft } from 'lucide-react';
 import { HeaderLockup } from './HeaderLockup';
@@ -8,6 +8,20 @@ import { StatusEditor } from './StatusEditor';
 import { StatusDot } from '../ui/StatusDot';
 import { friendHouseholds, circles } from '../../data/seedData';
 import { useTheme } from '../../context/ThemeContext';
+
+// Playful activity suggestions that cycle
+const activitySuggestions = [
+  { emoji: '🏊', text: 'Pool day vibes' },
+  { emoji: '🍦', text: 'Ice cream run?' },
+  { emoji: '🎨', text: 'Craft afternoon' },
+  { emoji: '🌳', text: 'Park hangout' },
+  { emoji: '🎬', text: 'Movie marathon' },
+  { emoji: '🍕', text: 'Pizza party time' },
+  { emoji: '🚴', text: 'Bike adventure' },
+  { emoji: '🎮', text: 'Game night!' },
+  { emoji: '☕', text: 'Coffee catch-up' },
+  { emoji: '🧁', text: 'Baking session' },
+];
 
 // Scattered positions for Home view (3x3 organic grid)
 const scatteredPositions = {
@@ -96,6 +110,15 @@ export function UnifiedHomeCircles({
   const [showStatusEditor, setShowStatusEditor] = useState(false);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [selectedCircle, setSelectedCircle] = useState(null);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+
+  // Auto-cycle activity suggestions
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSuggestionIndex(prev => (prev + 1) % activitySuggestions.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Status colors from theme
   const statusColors = {
@@ -155,11 +178,32 @@ export function UnifiedHomeCircles({
           paddingTop: isCirclesView ? 24 : 0
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="flex-shrink-0 flex items-start justify-between px-4 mb-3"
+        className="flex-shrink-0 flex items-center justify-between px-4 mb-3"
       >
-        <div className="text-sm" style={{ color: theme.textSecondary }}>
-          <span className="font-medium">72°</span>
-          <div className="text-xs">Sunny</div>
+        {/* Weather + Cycling Suggestion */}
+        <div className="flex items-center gap-3">
+          <div className="text-sm" style={{ color: theme.textSecondary }}>
+            <span className="font-medium">72°</span>
+            <div className="text-xs">Sunny</div>
+          </div>
+          <div className="h-6 w-px" style={{ backgroundColor: `${theme.textSecondary}30` }} />
+          <div className="relative h-8 w-28 overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={suggestionIndex}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="absolute inset-0 flex items-center gap-1.5"
+              >
+                <span className="text-lg">{activitySuggestions[suggestionIndex].emoji}</span>
+                <span className="text-xs font-medium" style={{ color: theme.textSecondary }}>
+                  {activitySuggestions[suggestionIndex].text}
+                </span>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
         <div className="text-sm text-right" style={{ color: theme.textSecondary }}>
           <span className="font-medium">{availableFriends.available}</span>
