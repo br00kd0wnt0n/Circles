@@ -46,23 +46,24 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
 
   return (
     <div className="relative mb-4">
-      {/* Arc header - color changes with status, subtle breathing */}
+      {/* Arc header background - subtle breathing animation */}
       <motion.div
-        className="relative pt-6 pb-4 px-4"
+        className="absolute inset-0"
         animate={{
           backgroundColor: currentStatus.color,
-          y: [0, -2, 0, 1, 0],
-          scale: [1, 1.003, 1, 0.998, 1],
+          y: [0, -1, 0, 0.5, 0],
         }}
         transition={{
           backgroundColor: { duration: 0.3 },
-          y: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
-          scale: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
+          y: { duration: 5, repeat: Infinity, ease: 'easeInOut' },
         }}
         style={{
           borderRadius: '0 0 50% 50% / 0 0 30px 30px'
         }}
-      >
+      />
+
+      {/* Content layer - stays static */}
+      <div className="relative pt-6 pb-4 px-4">
         {/* Theme toggle - top left */}
         <button
           onClick={cycleTheme}
@@ -141,7 +142,7 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
             </button>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

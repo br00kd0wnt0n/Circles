@@ -323,8 +323,8 @@ export function UnifiedHomeCircles({
           const isAvailable = household.status.state !== 'busy';
 
           // Unique float animation parameters for each contact
-          const floatDuration = 3 + (index % 3) * 0.5;
-          const floatDelay = index * 0.3;
+          const floatDuration = 4 + (index % 3) * 0.8;
+          const floatDelay = index * 0.4;
 
           return (
             <motion.div
@@ -334,16 +334,13 @@ export function UnifiedHomeCircles({
                 left: `${targetPos.x}%`,
                 top: `${targetPos.y}%`,
                 scale: isSelected ? 1.15 : isHovered ? 1.08 : 1,
-                y: isSelected || isHovered ? 0 : [0, -3, 0, 2, 0],
-                x: isSelected || isHovered ? 0 : [0, 1.5, 0, -1, 0],
               }}
               initial={false}
               transition={{
-                left: { type: 'spring', stiffness: 200, damping: 25, mass: 1 },
-                top: { type: 'spring', stiffness: 200, damping: 25, mass: 1 },
-                scale: { type: 'spring', stiffness: 200, damping: 25, mass: 1 },
-                y: { duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay },
-                x: { duration: floatDuration * 1.3, repeat: Infinity, ease: 'easeInOut', delay: floatDelay },
+                type: 'spring',
+                stiffness: 200,
+                damping: 25,
+                mass: 1
               }}
               style={{ transform: 'translate(-50%, -50%)' }}
               onClick={() => setSelectedHousehold(household)}
@@ -387,14 +384,19 @@ export function UnifiedHomeCircles({
                 </>
               )}
 
-              {/* Status Circle */}
+              {/* Status Circle - subtle floating */}
               <motion.div
                 className="relative w-10 h-10 rounded-full shadow-md"
                 style={{ backgroundColor: color }}
                 animate={{
                   boxShadow: isSelected
                     ? `0 0 0 3px ${color}50, 0 4px 12px ${color}60`
-                    : `0 2px 6px rgba(0,0,0,0.1)`
+                    : `0 2px 6px rgba(0,0,0,0.1)`,
+                  y: isSelected || isHovered ? 0 : [0, -1.5, 0, 1, 0],
+                }}
+                transition={{
+                  boxShadow: { duration: 0.2 },
+                  y: { duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay },
                 }}
               />
 
