@@ -33,12 +33,7 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
   };
 
   const getDefaultNote = () => {
-    switch (status.state) {
-      case 'available': return "We're available!";
-      case 'open': return 'Open to plans';
-      case 'busy': return 'Busy right now';
-      default: return "We're available!";
-    }
+    return 'Add note to broadcast';
   };
 
   // Get current status color
