@@ -109,11 +109,8 @@ const circlePositions = {
 
 // Get short display name
 const getShortName = (householdName) => {
-  // Only shorten "The Smiths" style names, leave others as-is
-  if (householdName.startsWith('The ')) {
-    return householdName.replace(/^The\s+/i, '').replace(/s$/i, '');
-  }
-  return householdName;
+  // Remove "The " prefix, keep everything else
+  return householdName.replace(/^The\s+/i, '');
 };
 
 export function UnifiedHomeCircles({
