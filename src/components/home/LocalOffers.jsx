@@ -1,8 +1,12 @@
 import { motion } from 'framer-motion';
 import { Tag, ChevronRight } from 'lucide-react';
 import { localOffers } from '../../data/seedData';
+import { useTheme } from '../../context/ThemeContext';
 
 export function LocalOffers() {
+  const { theme, themeId } = useTheme();
+  const isDark = themeId === 'midnight';
+
   // Show 2-3 random offers
   const displayOffers = localOffers.slice(0, 3);
 
@@ -10,10 +14,13 @@ export function LocalOffers() {
     <div className="mt-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Tag size={14} className="text-[#F4A69A]" />
-          <h3 className="text-sm font-medium text-[#1F2937]">Local Offers</h3>
+          <Tag size={14} style={{ color: theme.statusBusy }} />
+          <h3 className="text-sm font-medium" style={{ color: theme.textPrimary }}>Local Offers</h3>
         </div>
-        <button className="text-xs text-[#9CAF88] font-medium flex items-center gap-0.5">
+        <button
+          className="text-xs font-medium flex items-center gap-0.5"
+          style={{ color: theme.cta }}
+        >
           See all
           <ChevronRight size={14} />
         </button>
@@ -28,7 +35,11 @@ export function LocalOffers() {
             transition={{ delay: index * 0.1 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="flex-shrink-0 w-[160px] bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-left"
+            className="flex-shrink-0 w-[160px] rounded-xl p-3 border shadow-sm text-left transition-colors"
+            style={{
+              backgroundColor: isDark ? '#1E293B' : 'white',
+              borderColor: isDark ? '#334155' : '#F3F4F6'
+            }}
           >
             <div className="flex items-start justify-between mb-2">
               <span className="text-2xl">{offer.icon}</span>
@@ -42,13 +53,13 @@ export function LocalOffers() {
                 DEAL
               </span>
             </div>
-            <p className="text-xs font-semibold text-[#1F2937] leading-tight">
+            <p className="text-xs font-semibold leading-tight" style={{ color: theme.textPrimary }}>
               {offer.offer}
             </p>
-            <p className="text-[10px] text-[#6B7280] mt-0.5">
+            <p className="text-[10px] mt-0.5" style={{ color: theme.textSecondary }}>
               {offer.business}
             </p>
-            <p className="text-[10px] text-[#9CAF88] mt-1.5">
+            <p className="text-[10px] mt-1.5" style={{ color: theme.cta }}>
               {offer.validUntil}
             </p>
           </motion.button>
