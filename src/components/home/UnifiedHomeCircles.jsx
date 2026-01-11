@@ -7,13 +7,7 @@ import { HouseholdDetail } from './HouseholdDetail';
 import { StatusEditor } from './StatusEditor';
 import { StatusDot } from '../ui/StatusDot';
 import { friendHouseholds, circles } from '../../data/seedData';
-
-// Status colors
-const statusColors = {
-  available: '#9CAF88',
-  open: '#F4D03F',
-  busy: '#F4A69A'
-};
+import { useTheme } from '../../context/ThemeContext';
 
 // Scattered positions for Home view (3x3 organic grid)
 const scatteredPositions = {
@@ -96,11 +90,26 @@ export function UnifiedHomeCircles({
   onCreateHangout,
   onOpenSettings
 }) {
+  const { theme } = useTheme();
   const [selectedHousehold, setSelectedHousehold] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [showStatusEditor, setShowStatusEditor] = useState(false);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [selectedCircle, setSelectedCircle] = useState(null);
+
+  // Status colors from theme
+  const statusColors = {
+    available: theme.statusAvailable,
+    open: theme.statusOpen,
+    busy: theme.statusBusy
+  };
+
+  // Circle colors from theme
+  const circleColors = {
+    'rock-academy': theme.circleRock,
+    'woodstock-elementary': theme.circleWoodstock,
+    'nyc-friends': theme.circleNyc
+  };
 
   // Get members of selected circle
   const selectedCircleData = circles.find(c => c.id === selectedCircle);
@@ -148,11 +157,11 @@ export function UnifiedHomeCircles({
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className="flex-shrink-0 flex items-start justify-between px-4 mb-3"
       >
-        <div className="text-sm text-[#6B7280]">
+        <div className="text-sm" style={{ color: theme.textSecondary }}>
           <span className="font-medium">72°</span>
           <div className="text-xs">Sunny</div>
         </div>
-        <div className="text-sm text-[#6B7280] text-right">
+        <div className="text-sm text-right" style={{ color: theme.textSecondary }}>
           <span className="font-medium">{availableFriends.available}</span>
           <span className="mx-0.5">/</span>
           <span>{availableFriends.total}</span>
@@ -205,14 +214,14 @@ export function UnifiedHomeCircles({
                   cx={circleLayout['rock-academy'].cx}
                   cy={circleLayout['rock-academy'].cy}
                   r={circleLayout['rock-academy'].r}
-                  fill="#9CAF8820"
-                  stroke="#9CAF88"
+                  fill={`${circleColors['rock-academy']}20`}
+                  stroke={circleColors['rock-academy']}
                   strokeWidth="0.6"
                   strokeOpacity="0.5"
                   style={{ cursor: 'pointer', pointerEvents: 'auto' }}
                   onClick={() => setSelectedCircle('rock-academy')}
                 />
-                <text fill="#9CAF88" fontSize="4" fontWeight="600" opacity="0.9">
+                <text fill={circleColors['rock-academy']} fontSize="4" fontWeight="600" opacity="0.9">
                   <textPath href="#rockAcademyPath" startOffset="50%" textAnchor="middle">
                     Rock Academy
                   </textPath>
@@ -223,14 +232,14 @@ export function UnifiedHomeCircles({
                   cx={circleLayout['woodstock-elementary'].cx}
                   cy={circleLayout['woodstock-elementary'].cy}
                   r={circleLayout['woodstock-elementary'].r}
-                  fill="#94A3B820"
-                  stroke="#94A3B8"
+                  fill={`${circleColors['woodstock-elementary']}20`}
+                  stroke={circleColors['woodstock-elementary']}
                   strokeWidth="0.6"
                   strokeOpacity="0.5"
                   style={{ cursor: 'pointer', pointerEvents: 'auto' }}
                   onClick={() => setSelectedCircle('woodstock-elementary')}
                 />
-                <text fill="#94A3B8" fontSize="4" fontWeight="600" opacity="0.9">
+                <text fill={circleColors['woodstock-elementary']} fontSize="4" fontWeight="600" opacity="0.9">
                   <textPath href="#woodstockPath" startOffset="50%" textAnchor="middle">
                     Woodstock
                   </textPath>
@@ -241,14 +250,14 @@ export function UnifiedHomeCircles({
                   cx={circleLayout['nyc-friends'].cx}
                   cy={circleLayout['nyc-friends'].cy}
                   r={circleLayout['nyc-friends'].r}
-                  fill="#F4A69A20"
-                  stroke="#F4A69A"
+                  fill={`${circleColors['nyc-friends']}20`}
+                  stroke={circleColors['nyc-friends']}
                   strokeWidth="0.6"
                   strokeOpacity="0.5"
                   style={{ cursor: 'pointer', pointerEvents: 'auto' }}
                   onClick={() => setSelectedCircle('nyc-friends')}
                 />
-                <text fill="#F4A69A" fontSize="4" fontWeight="600" opacity="0.9">
+                <text fill={circleColors['nyc-friends']} fontSize="4" fontWeight="600" opacity="0.9">
                   <textPath href="#nycFriendsPath" startOffset="50%" textAnchor="middle">
                     NYC Friends
                   </textPath>
@@ -340,7 +349,8 @@ export function UnifiedHomeCircles({
 
               {/* Name Label */}
               <motion.span
-                className="absolute left-1/2 -translate-x-1/2 mt-1.5 text-xs font-medium text-[#6B7280] whitespace-nowrap"
+                className="absolute left-1/2 -translate-x-1/2 mt-1.5 text-xs font-medium whitespace-nowrap"
+                style={{ color: theme.textSecondary }}
               >
                 {getShortName(household.householdName)}
               </motion.span>
@@ -354,8 +364,9 @@ export function UnifiedHomeCircles({
       <div className="flex-shrink-0 py-3 flex justify-center gap-2">
         <motion.button
           onClick={() => onCreateHangout()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#6366F1] text-white rounded-xl font-medium text-sm shadow-md"
-          whileHover={{ backgroundColor: '#4F46E5' }}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm shadow-md transition-colors"
+          style={{ backgroundColor: theme.cta, color: theme.ctaText }}
+          whileHover={{ backgroundColor: theme.ctaHover }}
           whileTap={{ scale: 0.98 }}
         >
           <Plus size={18} />
@@ -364,8 +375,9 @@ export function UnifiedHomeCircles({
 
         <motion.button
           onClick={() => setShowVoiceMode(true)}
-          className="flex items-center justify-center w-11 h-11 bg-[#6366F1] text-white rounded-xl shadow-md"
-          whileHover={{ backgroundColor: '#4F46E5' }}
+          className="flex items-center justify-center w-11 h-11 rounded-xl shadow-md transition-colors"
+          style={{ backgroundColor: theme.cta, color: theme.ctaText }}
+          whileHover={{ backgroundColor: theme.ctaHover }}
           whileTap={{ scale: 0.98 }}
         >
           <Mic size={20} />

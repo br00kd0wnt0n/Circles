@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Pencil } from 'lucide-react';
-
-const statusOptions = [
-  { id: 'available', label: 'Available', color: '#22C55E' },  // Green
-  { id: 'open', label: 'Open', color: '#F59E0B' },            // Orange/Amber
-  { id: 'busy', label: 'Busy', color: '#F4A69A' }             // Pink/Coral
-];
+import { Settings, Pencil, Palette } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 export function HeaderLockup({ household, status, onStatusChange, onOpenSettings }) {
+  const { theme, cycleTheme } = useTheme();
+
+  const statusOptions = [
+    { id: 'available', label: 'Available', color: theme.headerAvailable },
+    { id: 'open', label: 'Open', color: theme.headerOpen },
+    { id: 'busy', label: 'Busy', color: theme.headerBusy }
+  ];
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(status.note || '');
 
@@ -53,12 +55,20 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
           borderRadius: '0 0 50% 50% / 0 0 30px 30px'
         }}
       >
+        {/* Theme toggle - top left */}
+        <button
+          onClick={cycleTheme}
+          className="absolute top-3 left-3 p-2 rounded-full hover:bg-white/20 transition-colors"
+        >
+          <Palette size={18} className="text-white/70" />
+        </button>
+
         {/* Settings cog - top right */}
         <button
           onClick={onOpenSettings}
           className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/20 transition-colors"
         >
-          <Settings size={18} className="text-green-900/50" />
+          <Settings size={18} className="text-white/70" />
         </button>
 
         {/* Family Name - centered, prominent */}

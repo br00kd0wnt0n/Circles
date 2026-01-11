@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTheme } from '../../context/ThemeContext';
 
 // Home icon - house outline
 const HomeIcon = ({ size = 28, isActive }) => (
@@ -55,8 +56,17 @@ const tabs = [
 ];
 
 export function BottomNav({ activeTab, onTabChange }) {
+  const { theme, themeId } = useTheme();
+  const isDark = themeId === 'midnight';
+
   return (
-    <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
+    <nav
+      className="absolute bottom-0 left-0 right-0 border-t z-30 transition-colors duration-500"
+      style={{
+        backgroundColor: isDark ? '#1E293B' : 'white',
+        borderColor: isDark ? '#334155' : '#E5E7EB'
+      }}
+    >
       <div className="flex justify-center items-center gap-16 h-16 max-w-md mx-auto pb-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -66,7 +76,8 @@ export function BottomNav({ activeTab, onTabChange }) {
             <motion.button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="flex items-center justify-center p-2"
+              className="flex items-center justify-center p-2 transition-colors"
+              style={{ color: isActive ? theme.cta : theme.textSecondary }}
               whileTap={{ scale: 0.9 }}
             >
               <Icon
