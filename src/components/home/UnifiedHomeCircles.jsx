@@ -384,17 +384,21 @@ export function UnifiedHomeCircles({
                 </>
               )}
 
-              {/* Status Circle - subtle floating */}
+              {/* Status Circle - size varies by status, subtle floating */}
               <motion.div
-                className="relative w-10 h-10 rounded-full shadow-md"
+                className="relative rounded-full shadow-md"
                 style={{ backgroundColor: color }}
                 animate={{
+                  width: household.status.state === 'busy' ? 32 : household.status.state === 'open' ? 36 : 40,
+                  height: household.status.state === 'busy' ? 32 : household.status.state === 'open' ? 36 : 40,
                   boxShadow: isSelected
                     ? `0 0 0 3px ${color}50, 0 4px 12px ${color}60`
                     : `0 2px 6px rgba(0,0,0,0.1)`,
                   y: isSelected || isHovered ? 0 : [0, -1.5, 0, 1, 0],
                 }}
                 transition={{
+                  width: { type: 'spring', stiffness: 300, damping: 25 },
+                  height: { type: 'spring', stiffness: 300, damping: 25 },
                   boxShadow: { duration: 0.2 },
                   y: { duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay },
                 }}
