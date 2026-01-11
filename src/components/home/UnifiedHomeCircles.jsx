@@ -175,17 +175,9 @@ export function UnifiedHomeCircles({
       });
     };
 
-    // Random interval between 8-20 seconds
-    const scheduleNext = () => {
-      const delay = 8000 + Math.random() * 12000;
-      return setTimeout(() => {
-        simulateUpdate();
-        timeoutId = scheduleNext();
-      }, delay);
-    };
-
-    let timeoutId = scheduleNext();
-    return () => clearTimeout(timeoutId);
+    // Update every 20 seconds
+    const interval = setInterval(simulateUpdate, 20000);
+    return () => clearInterval(interval);
   }, []);
 
   // Status colors from theme
