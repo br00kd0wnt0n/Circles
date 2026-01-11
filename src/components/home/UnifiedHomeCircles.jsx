@@ -389,8 +389,8 @@ export function UnifiedHomeCircles({
                 className="relative rounded-full shadow-md"
                 style={{ backgroundColor: color }}
                 animate={{
-                  width: household.status.state === 'busy' ? 32 : household.status.state === 'open' ? 36 : 40,
-                  height: household.status.state === 'busy' ? 32 : household.status.state === 'open' ? 36 : 40,
+                  width: household.status.state === 'busy' ? 24 : household.status.state === 'open' ? 36 : 40,
+                  height: household.status.state === 'busy' ? 24 : household.status.state === 'open' ? 36 : 40,
                   boxShadow: isSelected
                     ? `0 0 0 3px ${color}50, 0 4px 12px ${color}60`
                     : `0 2px 6px rgba(0,0,0,0.1)`,
