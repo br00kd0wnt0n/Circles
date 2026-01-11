@@ -43,9 +43,54 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
 
   // Get current status color
   const currentStatus = statusOptions.find(s => s.id === status.state) || statusOptions[0];
+  const hasNote = !!status.note;
+  const isAvailable = status.state !== 'busy';
 
   return (
-    <div className="relative mb-4">
+    <div className="relative mb-4 overflow-visible">
+      {/* Broadcast pulse rings - when note is set and not busy */}
+      {hasNote && isAvailable && (
+        <>
+          <motion.div
+            className="absolute inset-x-0 top-0 h-full pointer-events-none"
+            style={{
+              borderRadius: '0 0 50% 50% / 0 0 30px 30px',
+              border: `2px solid ${currentStatus.color}`,
+            }}
+            initial={{ opacity: 0, y: 0, scale: 1 }}
+            animate={{
+              opacity: [0, 0.4, 0],
+              y: [0, 15, 30],
+              scale: [1, 1.02, 1.04],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeOut',
+            }}
+          />
+          <motion.div
+            className="absolute inset-x-0 top-0 h-full pointer-events-none"
+            style={{
+              borderRadius: '0 0 50% 50% / 0 0 30px 30px',
+              border: `2px solid ${currentStatus.color}`,
+            }}
+            initial={{ opacity: 0, y: 0, scale: 1 }}
+            animate={{
+              opacity: [0, 0.4, 0],
+              y: [0, 15, 30],
+              scale: [1, 1.02, 1.04],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeOut',
+              delay: 1.25,
+            }}
+          />
+        </>
+      )}
+
       {/* Arc header background - subtle breathing animation */}
       <motion.div
         className="absolute inset-0"
