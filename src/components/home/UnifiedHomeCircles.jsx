@@ -23,6 +23,22 @@ const activitySuggestions = [
   { emoji: '🧁', text: 'Baking session' },
 ];
 
+// Sample broadcast notes for demo
+const sampleNotes = [
+  'Kids are bored!',
+  'Anyone around?',
+  'Free after 3pm',
+  'Pool day?',
+  'Looking for playdate',
+  'At the park!',
+  'Come hang!',
+  'Backyard hangout?',
+  'Movie night?',
+  'Ice cream run!',
+  null, // Sometimes clear the note
+  null,
+];
+
 // Scattered positions for Home view (3x3 organic grid)
 const scatteredPositions = {
   'barretts': { x: 18, y: 15 },
@@ -112,12 +128,64 @@ export function UnifiedHomeCircles({
   const [selectedCircle, setSelectedCircle] = useState(null);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
 
+  // Local state for simulated household updates
+  const [liveHouseholds, setLiveHouseholds] = useState(friendHouseholds);
+
   // Auto-cycle activity suggestions
   useEffect(() => {
     const interval = setInterval(() => {
       setSuggestionIndex(prev => (prev + 1) % activitySuggestions.length);
     }, 3500);
     return () => clearInterval(interval);
+  }, []);
+
+  // Simulate random status updates (demo mode)
+  useEffect(() => {
+    const simulateUpdate = () => {
+      setLiveHouseholds(prev => {
+        const newHouseholds = [...prev];
+        const randomIndex = Math.floor(Math.random() * newHouseholds.length);
+        const household = { ...newHouseholds[randomIndex] };
+
+        // Randomly decide what to update
+        const updateType = Math.random();
+
+        if (updateType < 0.6) {
+          // 60% chance: change status
+          const statuses = ['available', 'open', 'busy'];
+          const currentIndex = statuses.indexOf(household.status.state);
+          // Bias towards adjacent statuses for more realistic transitions
+          const direction = Math.random() < 0.5 ? 1 : -1;
+          const newIndex = Math.max(0, Math.min(2, currentIndex + direction));
+          household.status = {
+            ...household.status,
+            state: statuses[newIndex]
+          };
+        } else {
+          // 40% chance: change note
+          const newNote = sampleNotes[Math.floor(Math.random() * sampleNotes.length)];
+          household.status = {
+            ...household.status,
+            note: newNote
+          };
+        }
+
+        newHouseholds[randomIndex] = household;
+        return newHouseholds;
+      });
+    };
+
+    // Random interval between 8-20 seconds
+    const scheduleNext = () => {
+      const delay = 8000 + Math.random() * 12000;
+      return setTimeout(() => {
+        simulateUpdate();
+        timeoutId = scheduleNext();
+      }, delay);
+    };
+
+    let timeoutId = scheduleNext();
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Status colors from theme
@@ -138,15 +206,15 @@ export function UnifiedHomeCircles({
   const selectedCircleData = circles.find(c => c.id === selectedCircle);
   const selectedCircleMembers = useMemo(() => {
     if (!selectedCircle) return [];
-    return friendHouseholds.filter(h => h.circleIds?.includes(selectedCircle));
-  }, [selectedCircle]);
+    return liveHouseholds.filter(h => h.circleIds?.includes(selectedCircle));
+  }, [selectedCircle, liveHouseholds]);
 
   const availableFriends = useMemo(() => {
-    const available = friendHouseholds.filter(h =>
+    const available = liveHouseholds.filter(h =>
       h.status.state === 'available' || h.status.state === 'open'
     );
-    return { available: available.length, total: friendHouseholds.length };
-  }, []);
+    return { available: available.length, total: liveHouseholds.length };
+  }, [liveHouseholds]);
 
   const isCirclesView = viewMode === 'circles';
 
@@ -311,7 +379,7 @@ export function UnifiedHomeCircles({
           </AnimatePresence>
 
           {/* Contact dots */}
-          {friendHouseholds.map((household, index) => {
+          {liveHouseholds.map((household, index) => {
           const scatteredPos = scatteredPositions[household.id] || { x: 50, y: 50 };
           const circlePos = circlePositions[household.id] || scatteredPos;
           const targetPos = isCirclesView ? circlePos : scatteredPos;
