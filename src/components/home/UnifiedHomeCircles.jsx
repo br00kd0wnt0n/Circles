@@ -141,11 +141,15 @@ export function UnifiedHomeCircles({
       {/* Info Bar - always visible */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        animate={{
+          opacity: 1,
+          paddingTop: isCirclesView ? 24 : 0
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className="flex-shrink-0 flex items-start justify-between px-4 mb-3"
       >
         <div className="text-sm text-[#6B7280]">
-          <span className="font-medium">72</span>
+          <span className="font-medium">72°</span>
           <div className="text-xs">Sunny</div>
         </div>
         <div className="text-sm text-[#6B7280] text-right">
