@@ -46,11 +46,19 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
 
   return (
     <div className="relative mb-4">
-      {/* Arc header - color changes with status */}
+      {/* Arc header - color changes with status, subtle breathing */}
       <motion.div
         className="relative pt-6 pb-4 px-4"
-        animate={{ backgroundColor: currentStatus.color }}
-        transition={{ duration: 0.3 }}
+        animate={{
+          backgroundColor: currentStatus.color,
+          y: [0, -2, 0, 1, 0],
+          scale: [1, 1.003, 1, 0.998, 1],
+        }}
+        transition={{
+          backgroundColor: { duration: 0.3 },
+          y: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
+          scale: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
+        }}
         style={{
           borderRadius: '0 0 50% 50% / 0 0 30px 30px'
         }}

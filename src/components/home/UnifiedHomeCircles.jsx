@@ -311,7 +311,7 @@ export function UnifiedHomeCircles({
           </AnimatePresence>
 
           {/* Contact dots */}
-          {friendHouseholds.map((household) => {
+          {friendHouseholds.map((household, index) => {
           const scatteredPos = scatteredPositions[household.id] || { x: 50, y: 50 };
           const circlePos = circlePositions[household.id] || scatteredPos;
           const targetPos = isCirclesView ? circlePos : scatteredPos;
@@ -322,6 +322,10 @@ export function UnifiedHomeCircles({
           const hasNote = !!household.status.note;
           const isAvailable = household.status.state !== 'busy';
 
+          // Unique float animation parameters for each contact
+          const floatDuration = 3 + (index % 3) * 0.5;
+          const floatDelay = index * 0.3;
+
           return (
             <motion.div
               key={household.id}
@@ -329,14 +333,17 @@ export function UnifiedHomeCircles({
               animate={{
                 left: `${targetPos.x}%`,
                 top: `${targetPos.y}%`,
-                scale: isSelected ? 1.15 : isHovered ? 1.08 : 1
+                scale: isSelected ? 1.15 : isHovered ? 1.08 : 1,
+                y: isSelected || isHovered ? 0 : [0, -3, 0, 2, 0],
+                x: isSelected || isHovered ? 0 : [0, 1.5, 0, -1, 0],
               }}
               initial={false}
               transition={{
-                type: 'spring',
-                stiffness: 200,
-                damping: 25,
-                mass: 1
+                left: { type: 'spring', stiffness: 200, damping: 25, mass: 1 },
+                top: { type: 'spring', stiffness: 200, damping: 25, mass: 1 },
+                scale: { type: 'spring', stiffness: 200, damping: 25, mass: 1 },
+                y: { duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay },
+                x: { duration: floatDuration * 1.3, repeat: Infinity, ease: 'easeInOut', delay: floatDelay },
               }}
               style={{ transform: 'translate(-50%, -50%)' }}
               onClick={() => setSelectedHousehold(household)}
