@@ -122,30 +122,30 @@ const circleLayout = {
 };
 
 // Explicit circle positions for each household based on their circle membership
-// Positions adjusted for larger circles with good spacing
+// Positions adjusted for better spacing within each Venn region
 const circlePositions = {
   // rock-academy only: Barretts - left side of left circle
-  'barretts': { x: 8, y: 32 },
+  'barretts': { x: 12, y: 35 },
 
   // woodstock-elementary only: Smiths, Wangros - right side of right circle
-  'smiths': { x: 92, y: 24 },
-  'wangros': { x: 92, y: 44 },
+  'smiths': { x: 88, y: 28 },
+  'wangros': { x: 88, y: 42 },
 
-  // nyc-friends only: Chase+Waverly, Cassie+Riley - inside bottom circle
-  'chase-waverly': { x: 35, y: 80 },
-  'cassie-riley': { x: 65, y: 80 },
+  // nyc-friends only: Chase+Waverly, Cassie+Riley - bottom of bottom circle
+  'chase-waverly': { x: 38, y: 82 },
+  'cassie-riley': { x: 62, y: 82 },
 
   // rock-academy + woodstock-elementary intersection: Sachs - top center
-  'sachs': { x: 50, y: 16 },
+  'sachs': { x: 50, y: 20 },
 
   // woodstock-elementary + nyc-friends intersection: Sarah - bottom right
-  'sarah': { x: 76, y: 58 },
+  'sarah': { x: 72, y: 60 },
 
   // nyc-friends + rock-academy intersection: Asens - bottom left
-  'asens': { x: 24, y: 58 },
+  'asens': { x: 28, y: 60 },
 
   // All three circles (center): Mandy
-  'mandy': { x: 50, y: 42 },
+  'mandy': { x: 50, y: 44 },
 };
 
 // Get short display name
@@ -350,9 +350,9 @@ export function UnifiedHomeCircles({
                   />
                   <path
                     id="nycFriendsPath"
-                    d={`M ${circleLayout['nyc-friends'].cx - circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r + 3}
-                        A ${circleLayout['nyc-friends'].r + 3} ${circleLayout['nyc-friends'].r + 3} 0 0 0
-                        ${circleLayout['nyc-friends'].cx + circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r + 3}`}
+                    d={`M ${circleLayout['nyc-friends'].cx - circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r + 1}
+                        A ${circleLayout['nyc-friends'].r + 1} ${circleLayout['nyc-friends'].r + 1} 0 0 0
+                        ${circleLayout['nyc-friends'].cx + circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r + 1}`}
                     fill="none"
                   />
                 </defs>
