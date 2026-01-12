@@ -5,6 +5,7 @@ import { HeaderLockup } from './HeaderLockup';
 import { LocalOffers } from './LocalOffers';
 import { HouseholdDetail } from './HouseholdDetail';
 import { StatusEditor } from './StatusEditor';
+import { MessageComposer } from '../messaging/MessageComposer';
 import { StatusDot } from '../ui/StatusDot';
 import { friendHouseholds, circles } from '../../data/seedData';
 import { useTheme } from '../../context/ThemeContext';
@@ -128,6 +129,7 @@ export function UnifiedHomeCircles({
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [selectedCircle, setSelectedCircle] = useState(null);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [showMessageComposer, setShowMessageComposer] = useState(false);
 
   // Local state for simulated household updates
   const [liveHouseholds, setLiveHouseholds] = useState(friendHouseholds);
@@ -744,10 +746,7 @@ export function UnifiedHomeCircles({
                   Invite All
                 </button>
                 <button
-                  onClick={() => {
-                    // TODO: Implement message all functionality
-                    console.log('Message all in circle:', selectedCircle);
-                  }}
+                  onClick={() => setShowMessageComposer(true)}
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors"
                 >
                   <MessageCircle size={20} />
@@ -776,6 +775,14 @@ export function UnifiedHomeCircles({
         isOpen={!!selectedHousehold}
         onClose={() => setSelectedHousehold(null)}
         onInvite={onCreateHangout}
+      />
+
+      {/* Message Composer */}
+      <MessageComposer
+        isOpen={showMessageComposer}
+        onClose={() => setShowMessageComposer(false)}
+        recipients={selectedCircleMembers}
+        circleName={selectedCircleData?.name || ''}
       />
     </div>
   );
