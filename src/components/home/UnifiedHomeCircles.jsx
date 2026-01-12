@@ -93,59 +93,46 @@ const scatteredPositions = {
   'asens': { x: 85, y: 78 },
 };
 
-// Calculate circle sizes based on member count
-const getCircleSizes = () => {
-  const counts = {};
-  circles.forEach(c => {
-    counts[c.id] = friendHouseholds.filter(h => h.circleIds?.includes(c.id)).length;
-  });
-  const maxCount = Math.max(...Object.values(counts));
-  const minSize = 38;
-  const maxSize = 46;
-
-  const sizes = {};
-  circles.forEach(c => {
-    const ratio = counts[c.id] / maxCount;
-    sizes[c.id] = minSize + (maxSize - minSize) * ratio;
-  });
-  return sizes;
+// Circle sizes - Rock Academy smaller (1 exclusive), others larger (2 exclusive each)
+const circleSizes = {
+  'rock-academy': 36,        // Smaller - only Barretts exclusive
+  'woodstock-elementary': 42, // Larger - Smiths + Wangros exclusive
+  'nyc-friends': 42          // Larger - Chase+Waverly + Cassie+Riley exclusive
 };
 
-const circleSizes = getCircleSizes();
-
 // Circle layout - Venn diagram with 3 overlapping circles
-// Larger circles with adjusted positions for better overlap
+// Positioned to create clear exclusive zones and intersection areas
 const circleLayout = {
-  'rock-academy': { cx: 28, cy: 35, r: circleSizes['rock-academy'] },
-  'woodstock-elementary': { cx: 72, cy: 35, r: circleSizes['woodstock-elementary'] },
-  'nyc-friends': { cx: 50, cy: 72, r: circleSizes['nyc-friends'] }
+  'rock-academy': { cx: 26, cy: 32, r: circleSizes['rock-academy'] },
+  'woodstock-elementary': { cx: 74, cy: 32, r: circleSizes['woodstock-elementary'] },
+  'nyc-friends': { cx: 50, cy: 70, r: circleSizes['nyc-friends'] }
 };
 
 // Explicit circle positions for each household based on their circle membership
-// Positions adjusted for better spacing within each Venn region
+// Contacts positioned clearly within their designated Venn regions
 const circlePositions = {
-  // rock-academy only: Barretts - left side of left circle
-  'barretts': { x: 12, y: 35 },
+  // rock-academy only: Barretts - clearly in left circle's exclusive zone
+  'barretts': { x: 10, y: 28 },
 
-  // woodstock-elementary only: Smiths, Wangros - right side of right circle
-  'smiths': { x: 88, y: 28 },
-  'wangros': { x: 88, y: 42 },
+  // woodstock-elementary only: Smiths, Wangros - clearly in right circle's exclusive zone
+  'smiths': { x: 90, y: 22 },
+  'wangros': { x: 92, y: 38 },
 
-  // nyc-friends only: Chase+Waverly, Cassie+Riley - bottom of bottom circle
-  'chase-waverly': { x: 38, y: 82 },
-  'cassie-riley': { x: 62, y: 82 },
+  // nyc-friends only: Chase+Waverly, Cassie+Riley - clearly in bottom circle's exclusive zone
+  'chase-waverly': { x: 36, y: 88 },
+  'cassie-riley': { x: 64, y: 88 },
 
-  // rock-academy + woodstock-elementary intersection: Sachs - top center
-  'sachs': { x: 50, y: 20 },
+  // rock-academy + woodstock-elementary intersection: Sachs - top overlap
+  'sachs': { x: 50, y: 18 },
 
-  // woodstock-elementary + nyc-friends intersection: Sarah - bottom right
-  'sarah': { x: 72, y: 60 },
+  // woodstock-elementary + nyc-friends intersection: Sarah - bottom right overlap
+  'sarah': { x: 70, y: 56 },
 
-  // nyc-friends + rock-academy intersection: Asens - bottom left
-  'asens': { x: 28, y: 60 },
+  // nyc-friends + rock-academy intersection: Asens - bottom left overlap
+  'asens': { x: 30, y: 56 },
 
   // All three circles (center): Mandy
-  'mandy': { x: 50, y: 44 },
+  'mandy': { x: 50, y: 42 },
 };
 
 // Get short display name
