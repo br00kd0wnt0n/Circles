@@ -52,13 +52,25 @@ const ActivityIcon = ({ size = 28, isActive }) => (
   </svg>
 );
 
-export function BottomNav({ activeTab, viewMode, onTabChange, onMakePlans, onToggleView }) {
+export function BottomNav({ activeTab, viewMode, onTabChange, onMakePlans, onToggleView, showMakePlans }) {
   const { theme, themeId } = useTheme();
   const isDark = themeId === 'midnight';
 
   // Show single circle when in venn mode (hint: tap for scattered)
   // Show venn circles when in scattered mode (hint: tap for venn)
   const CircleIcon = viewMode === 'venn' ? SingleCircleIcon : VennIcon;
+
+  // Check if any overlay is showing
+  const hasOverlay = activeTab === 'activity' || showMakePlans;
+
+  // Circle button handler - close overlays if showing, otherwise toggle view
+  const handleCircleClick = () => {
+    if (hasOverlay) {
+      onTabChange('circles');
+    } else {
+      onToggleView();
+    }
+  };
 
   return (
     <nav
@@ -82,15 +94,15 @@ export function BottomNav({ activeTab, viewMode, onTabChange, onMakePlans, onTog
 
         {/* Circles Toggle - Center */}
         <motion.button
-          onClick={onToggleView}
+          onClick={handleCircleClick}
           className="flex items-center justify-center p-3 min-w-[48px] min-h-[48px] rounded-full transition-colors"
           style={{
-            color: activeTab === 'circles' ? theme.cta : theme.textSecondary,
-            backgroundColor: activeTab === 'circles' ? `${theme.cta}15` : 'transparent'
+            color: !hasOverlay ? theme.cta : theme.textSecondary,
+            backgroundColor: !hasOverlay ? `${theme.cta}15` : 'transparent'
           }}
           whileTap={{ scale: 0.9 }}
         >
-          <CircleIcon size={28} isActive={activeTab === 'circles'} />
+          <CircleIcon size={28} isActive={!hasOverlay} />
         </motion.button>
 
         {/* Activity */}

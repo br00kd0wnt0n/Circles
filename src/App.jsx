@@ -89,14 +89,7 @@ function App() {
   };
 
   const handleToggleView = () => {
-    // If Activity or Make Plans is open, just close them (don't toggle view)
-    if (activeTab === 'activity' || showMakePlans) {
-      setActiveTab('circles');
-      setShowMakePlans(false);
-      setPreselectedFriends([]);
-      return;
-    }
-    // Only toggle view mode if nothing is open
+    // Toggle between venn and scattered view modes
     setViewMode(prev => prev === 'venn' ? 'scattered' : 'venn');
   };
 
@@ -234,6 +227,7 @@ function App() {
           <BottomNav
             activeTab={activeTab}
             viewMode={viewMode}
+            showMakePlans={showMakePlans}
             onTabChange={handleTabChange}
             onMakePlans={() => handleMakePlans()}
             onToggleView={handleToggleView}
