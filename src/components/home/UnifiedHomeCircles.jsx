@@ -121,8 +121,8 @@ const circlePositions = {
   'chase-waverly': { x: 42, y: 78 },
   'cassie-riley': { x: 58, y: 78 },
 
-  // rock-academy + woodstock-elementary intersection: Sachs - in the top overlap almond
-  'sachs': { x: 50, y: 22 },
+  // rock-academy + woodstock-elementary intersection: Sachs - centered in top overlap
+  'sachs': { x: 46, y: 22 },
 
   // woodstock-elementary + nyc-friends intersection: Sarah - in right overlap
   'sarah': { x: 64, y: 52 },
@@ -131,7 +131,7 @@ const circlePositions = {
   'asens': { x: 36, y: 52 },
 
   // All three circles (center): Mandy - TRUE center of triple overlap
-  'mandy': { x: 50, y: 42 },
+  'mandy': { x: 46, y: 42 },
 };
 
 // Get short display name
