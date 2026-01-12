@@ -35,14 +35,37 @@ function App() {
   const isMakePlansView = showMakePlans;
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
+    // Close Make Plans if open when switching tabs
+    if (showMakePlans) {
+      setShowMakePlans(false);
+      setPreselectedFriends([]);
+    }
+    // Toggle Activity off if already on it
+    if (tab === 'activity' && activeTab === 'activity') {
+      setActiveTab('circles');
+    } else {
+      setActiveTab(tab);
+    }
   };
 
   const handleToggleView = () => {
+    // Close Activity when toggling circle view
+    if (activeTab === 'activity') {
+      setActiveTab('circles');
+    }
+    // Close Make Plans if open
+    if (showMakePlans) {
+      setShowMakePlans(false);
+      setPreselectedFriends([]);
+    }
     setViewMode(prev => prev === 'venn' ? 'scattered' : 'venn');
   };
 
   const handleMakePlans = (friendIds = []) => {
+    // Close Activity when opening Make Plans
+    if (activeTab === 'activity') {
+      setActiveTab('circles');
+    }
     setPreselectedFriends(friendIds);
     setShowMakePlans(true);
   };
@@ -147,6 +170,7 @@ function App() {
         {/* Bottom Navigation */}
         <BottomNav
           activeTab={activeTab}
+          viewMode={viewMode}
           onTabChange={handleTabChange}
           onMakePlans={() => handleMakePlans()}
           onToggleView={handleToggleView}

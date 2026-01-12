@@ -2,8 +2,8 @@ import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
-// Circle icon - venn diagram style for circles view
-const CircleIcon = ({ size = 28, isActive }) => (
+// Venn diagram icon - shows when in scattered mode (hint: tap for venn)
+const VennIcon = ({ size = 28, isActive }) => (
   <svg
     width={size}
     height={size}
@@ -17,6 +17,22 @@ const CircleIcon = ({ size = 28, isActive }) => (
     <circle cx="9" cy="10" r="6" />
     <circle cx="15" cy="10" r="6" />
     <circle cx="12" cy="15" r="6" />
+  </svg>
+);
+
+// Single circle icon - shows when in venn mode (hint: tap for scattered)
+const SingleCircleIcon = ({ size = 28, isActive }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={isActive ? 2.5 : 1.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="8" />
   </svg>
 );
 
@@ -36,9 +52,13 @@ const ActivityIcon = ({ size = 28, isActive }) => (
   </svg>
 );
 
-export function BottomNav({ activeTab, onTabChange, onMakePlans, onToggleView }) {
+export function BottomNav({ activeTab, viewMode, onTabChange, onMakePlans, onToggleView }) {
   const { theme, themeId } = useTheme();
   const isDark = themeId === 'midnight';
+
+  // Show single circle when in venn mode (hint: tap for scattered)
+  // Show venn circles when in scattered mode (hint: tap for venn)
+  const CircleIcon = viewMode === 'venn' ? SingleCircleIcon : VennIcon;
 
   return (
     <nav
