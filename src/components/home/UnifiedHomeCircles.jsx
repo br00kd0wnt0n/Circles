@@ -7,22 +7,62 @@ import { HouseholdDetail } from './HouseholdDetail';
 import { StatusEditor } from './StatusEditor';
 import { MessageComposer } from '../messaging/MessageComposer';
 import { StatusDot } from '../ui/StatusDot';
-import { friendHouseholds, circles } from '../../data/seedData';
+import { friendHouseholds, circles, localOffers } from '../../data/seedData';
 import { useTheme } from '../../context/ThemeContext';
 
-// Playful activity suggestions that cycle
-const activitySuggestions = [
-  { emoji: '🏊', text: 'Pool day vibes' },
-  { emoji: '🍦', text: 'Ice cream run?' },
-  { emoji: '🎨', text: 'Craft afternoon' },
-  { emoji: '🌳', text: 'Park hangout' },
-  { emoji: '🎬', text: 'Movie marathon' },
-  { emoji: '🍕', text: 'Pizza party time' },
-  { emoji: '🚴', text: 'Bike adventure' },
-  { emoji: '🎮', text: 'Game night!' },
-  { emoji: '☕', text: 'Coffee catch-up' },
-  { emoji: '🧁', text: 'Baking session' },
-];
+// Generate dynamic activity suggestions based on context
+const generateSuggestions = (households, weather = 'sunny') => {
+  const available = households.filter(h => h.status.state === 'available' || h.status.state === 'open');
+  const suggestions = [];
+
+  // Get short name for suggestions
+  const getShortName = (name) => name.replace(/^The\s+/i, '');
+
+  // Weather-based activities
+  const weatherActivities = {
+    sunny: [
+      { emoji: '🏊', template: (name) => `Pool day with ${name}?` },
+      { emoji: '🌳', template: (name) => `Park hang with ${name}?` },
+      { emoji: '🚴', template: (name) => `Bike ride with ${name}?` },
+      { emoji: '🍦', template: (name) => `Ice cream with ${name}?` },
+    ],
+    cloudy: [
+      { emoji: '☕', template: (name) => `Coffee with ${name}?` },
+      { emoji: '🎨', template: (name) => `Craft day with ${name}?` },
+      { emoji: '🌳', template: (name) => `Walk with ${name}?` },
+    ],
+    rainy: [
+      { emoji: '🎬', template: (name) => `Movie day with ${name}?` },
+      { emoji: '🎮', template: (name) => `Game night with ${name}?` },
+      { emoji: '🧁', template: (name) => `Baking with ${name}?` },
+    ]
+  };
+
+  const activities = weatherActivities[weather] || weatherActivities.sunny;
+
+  // Add personalized suggestions for available friends
+  available.slice(0, 3).forEach((household, i) => {
+    const activity = activities[i % activities.length];
+    suggestions.push({
+      emoji: activity.emoji,
+      text: activity.template(getShortName(household.householdName))
+    });
+  });
+
+  // Add local offer suggestions
+  localOffers.slice(0, 2).forEach(offer => {
+    if (available.length > 0) {
+      const randomFriend = available[Math.floor(Math.random() * available.length)];
+      suggestions.push({
+        emoji: offer.icon,
+        text: `${offer.business} with ${getShortName(randomFriend.householdName)}?`
+      });
+    }
+  });
+
+  // Shuffle and return max 5
+  return suggestions.sort(() => Math.random() - 0.5).slice(0, 5);
+};
 
 // Sample broadcast notes for demo
 const sampleNotes = [
@@ -134,13 +174,19 @@ export function UnifiedHomeCircles({
   // Local state for simulated household updates
   const [liveHouseholds, setLiveHouseholds] = useState(friendHouseholds);
 
+  // Generate dynamic suggestions based on available friends and weather
+  const activitySuggestions = useMemo(() => {
+    return generateSuggestions(liveHouseholds, 'sunny');
+  }, [liveHouseholds]);
+
   // Auto-cycle activity suggestions
   useEffect(() => {
+    if (activitySuggestions.length === 0) return;
     const interval = setInterval(() => {
       setSuggestionIndex(prev => (prev + 1) % activitySuggestions.length);
-    }, 3500);
+    }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activitySuggestions.length]);
 
   // Simulate random status updates (demo mode)
   useEffect(() => {
@@ -249,24 +295,28 @@ export function UnifiedHomeCircles({
             <span className="font-medium">72°</span>
             <div className="text-xs">Sunny</div>
           </div>
-          <div className="h-6 w-px" style={{ backgroundColor: `${theme.textSecondary}30` }} />
-          <div className="relative h-8 w-28 overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={suggestionIndex}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="absolute inset-0 flex items-center gap-1.5"
-              >
-                <span className="text-lg">{activitySuggestions[suggestionIndex].emoji}</span>
-                <span className="text-xs font-medium" style={{ color: theme.textSecondary }}>
-                  {activitySuggestions[suggestionIndex].text}
-                </span>
-              </motion.div>
-            </AnimatePresence>
-          </div>
+          {activitySuggestions.length > 0 && (
+            <>
+              <div className="h-6 w-px" style={{ backgroundColor: `${theme.textSecondary}30` }} />
+              <div className="relative h-8 flex-1 max-w-[180px] overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={suggestionIndex}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    className="absolute inset-0 flex items-center gap-1.5"
+                  >
+                    <span className="text-base">{activitySuggestions[suggestionIndex % activitySuggestions.length]?.emoji}</span>
+                    <span className="text-[11px] font-medium truncate" style={{ color: theme.textSecondary }}>
+                      {activitySuggestions[suggestionIndex % activitySuggestions.length]?.text}
+                    </span>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </>
+          )}
         </div>
         <div className="text-sm text-right" style={{ color: theme.textSecondary }}>
           <span className="font-medium">{availableFriends.available}</span>
