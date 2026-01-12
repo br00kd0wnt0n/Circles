@@ -179,12 +179,12 @@ export function UnifiedHomeCircles({
     return generateSuggestions(liveHouseholds, 'sunny');
   }, [liveHouseholds]);
 
-  // Auto-cycle activity suggestions
+  // Auto-cycle activity suggestions (slower pace)
   useEffect(() => {
     if (activitySuggestions.length === 0) return;
     const interval = setInterval(() => {
       setSuggestionIndex(prev => (prev + 1) % activitySuggestions.length);
-    }, 4000);
+    }, 8000);
     return () => clearInterval(interval);
   }, [activitySuggestions.length]);
 
@@ -762,7 +762,7 @@ export function UnifiedHomeCircles({
                           }}
                           className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors"
                         >
-                          Invite
+                          Make Plans
                         </button>
                       )}
                     </div>
