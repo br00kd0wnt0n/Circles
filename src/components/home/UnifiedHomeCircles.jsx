@@ -93,45 +93,45 @@ const scatteredPositions = {
   'asens': { x: 85, y: 78 },
 };
 
-// Circle sizes - larger to encompass contacts properly
+// Circle sizes - balanced for good overlap areas
 const circleSizes = {
   'rock-academy': 36,
   'woodstock-elementary': 38,
   'nyc-friends': 38
 };
 
-// Circle layout - spread out with larger circles
+// Circle layout - positioned for proper intersection zones
 // SVG viewBox is "-15 -15 130 130", coordinates range from -15 to 115
 const circleLayout = {
-  'rock-academy': { cx: 25, cy: 28, r: circleSizes['rock-academy'] },
-  'woodstock-elementary': { cx: 75, cy: 28, r: circleSizes['woodstock-elementary'] },
-  'nyc-friends': { cx: 50, cy: 78, r: circleSizes['nyc-friends'] }
+  'rock-academy': { cx: 28, cy: 30, r: circleSizes['rock-academy'] },
+  'woodstock-elementary': { cx: 72, cy: 30, r: circleSizes['woodstock-elementary'] },
+  'nyc-friends': { cx: 50, cy: 72, r: circleSizes['nyc-friends'] }
 };
 
-// Contact positions - centered within their designated regions
+// Contact positions - well inside their designated regions
 const circlePositions = {
   // rock-academy only: Barretts - inside Rock circle
-  'barretts': { x: 15, y: 24 },
+  'barretts': { x: 14, y: 26 },
 
   // woodstock-elementary only: Smiths, Wangros - inside Woodstock
-  'smiths': { x: 85, y: 16 },
-  'wangros': { x: 86, y: 32 },
+  'smiths': { x: 86, y: 18 },
+  'wangros': { x: 82, y: 34 },
 
   // nyc-friends only: Chase+Waverly, Cassie+Riley - inside NYC circle
-  'chase-waverly': { x: 40, y: 82 },
-  'cassie-riley': { x: 60, y: 82 },
+  'chase-waverly': { x: 40, y: 84 },
+  'cassie-riley': { x: 60, y: 84 },
 
-  // rock-academy + woodstock-elementary intersection: Sachs - top center
-  'sachs': { x: 50, y: 18 },
+  // rock-academy + woodstock-elementary intersection: Sachs - top center overlap
+  'sachs': { x: 50, y: 24 },
 
-  // woodstock-elementary + nyc-friends intersection: Sarah - bottom right
-  'sarah': { x: 66, y: 58 },
+  // woodstock-elementary + nyc-friends intersection: Sarah - bottom right overlap
+  'sarah': { x: 66, y: 56 },
 
-  // nyc-friends + rock-academy intersection: Asens - bottom left
-  'asens': { x: 34, y: 58 },
+  // nyc-friends + rock-academy intersection: Asens - bottom left overlap
+  'asens': { x: 34, y: 56 },
 
-  // All three circles (center): Mandy
-  'mandy': { x: 50, y: 44 },
+  // All three circles (center): Mandy - clearly in center
+  'mandy': { x: 50, y: 48 },
 };
 
 // Get short display name
