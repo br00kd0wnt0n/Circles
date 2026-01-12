@@ -34,7 +34,8 @@ export function MakePlansOverlay({ onClose, onSend, preselectedFriends = [] }) {
     );
   };
 
-  const isValid = selectedTimeSlot && selectedFriends.length > 0;
+  // Only require friends selected - when/what are optional
+  const isValid = selectedFriends.length > 0;
 
   const handleSend = () => {
     if (!isValid) return;
