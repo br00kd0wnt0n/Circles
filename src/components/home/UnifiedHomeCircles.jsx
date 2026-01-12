@@ -318,8 +318,8 @@ export function UnifiedHomeCircles({
       </motion.div>
 
       {/* Contacts area with circle outlines */}
-      <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-visible px-4">
-        <div className="relative w-full aspect-square max-w-[340px] max-h-full">
+      <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-visible px-4 -mt-4">
+        <div className="relative w-full aspect-square max-w-[340px] max-h-[85%]">
           {/* Circle outlines - only show in circles view */}
           <AnimatePresence>
             {isVennView && (
