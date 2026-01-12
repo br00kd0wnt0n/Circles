@@ -95,44 +95,44 @@ const scatteredPositions = {
 
 // Circle sizes - Rock Academy smaller (1 exclusive), others larger (2 exclusive each)
 const circleSizes = {
-  'rock-academy': 36,        // Smaller - only Barretts exclusive
-  'woodstock-elementary': 42, // Larger - Smiths + Wangros exclusive
-  'nyc-friends': 42          // Larger - Chase+Waverly + Cassie+Riley exclusive
+  'rock-academy': 32,        // Smaller - only Barretts exclusive
+  'woodstock-elementary': 38, // Larger - Smiths + Wangros exclusive
+  'nyc-friends': 38          // Larger - Chase+Waverly + Cassie+Riley exclusive
 };
 
 // Circle layout - Venn diagram with 3 overlapping circles
-// Positioned to create clear exclusive zones and intersection areas
+// SVG viewBox is "-15 -15 130 130", so coordinates range from -15 to 115
 const circleLayout = {
-  'rock-academy': { cx: 26, cy: 32, r: circleSizes['rock-academy'] },
-  'woodstock-elementary': { cx: 74, cy: 32, r: circleSizes['woodstock-elementary'] },
-  'nyc-friends': { cx: 50, cy: 70, r: circleSizes['nyc-friends'] }
+  'rock-academy': { cx: 30, cy: 35, r: circleSizes['rock-academy'] },
+  'woodstock-elementary': { cx: 70, cy: 35, r: circleSizes['woodstock-elementary'] },
+  'nyc-friends': { cx: 50, cy: 68, r: circleSizes['nyc-friends'] }
 };
 
-// Explicit circle positions for each household based on their circle membership
-// Contacts positioned clearly within their designated Venn regions
+// CSS percentages calculated from SVG coordinates: CSS = (SVG + 15) / 130 * 100
+// Contact positions must be well inside circle boundaries (accounting for dot size ~8 SVG units)
 const circlePositions = {
-  // rock-academy only: Barretts - clearly in left circle's exclusive zone
-  'barretts': { x: 10, y: 28 },
+  // rock-academy only: Barretts - SVG ~(8, 32), far left in Rock
+  'barretts': { x: 18, y: 36 },
 
-  // woodstock-elementary only: Smiths, Wangros - clearly in right circle's exclusive zone
-  'smiths': { x: 90, y: 22 },
-  'wangros': { x: 92, y: 38 },
+  // woodstock-elementary only: Smiths, Wangros - SVG ~(90, 28) and (92, 42)
+  'smiths': { x: 81, y: 33 },
+  'wangros': { x: 83, y: 44 },
 
-  // nyc-friends only: Chase+Waverly, Cassie+Riley - clearly in bottom circle's exclusive zone
-  'chase-waverly': { x: 36, y: 88 },
-  'cassie-riley': { x: 64, y: 88 },
+  // nyc-friends only: Chase+Waverly, Cassie+Riley - SVG ~(38, 88) and (62, 88)
+  'chase-waverly': { x: 41, y: 79 },
+  'cassie-riley': { x: 59, y: 79 },
 
-  // rock-academy + woodstock-elementary intersection: Sachs - top overlap
-  'sachs': { x: 50, y: 18 },
+  // rock-academy + woodstock-elementary intersection: Sachs - SVG ~(50, 22)
+  'sachs': { x: 50, y: 28 },
 
-  // woodstock-elementary + nyc-friends intersection: Sarah - bottom right overlap
-  'sarah': { x: 70, y: 56 },
+  // woodstock-elementary + nyc-friends intersection: Sarah - SVG ~(65, 55)
+  'sarah': { x: 62, y: 54 },
 
-  // nyc-friends + rock-academy intersection: Asens - bottom left overlap
-  'asens': { x: 30, y: 56 },
+  // nyc-friends + rock-academy intersection: Asens - SVG ~(35, 55)
+  'asens': { x: 38, y: 54 },
 
-  // All three circles (center): Mandy
-  'mandy': { x: 50, y: 42 },
+  // All three circles (center): Mandy - SVG ~(50, 46)
+  'mandy': { x: 50, y: 47 },
 };
 
 // Get short display name
