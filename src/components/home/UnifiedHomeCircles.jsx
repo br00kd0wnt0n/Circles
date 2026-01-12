@@ -93,11 +93,11 @@ const scatteredPositions = {
   'asens': { x: 85, y: 78 },
 };
 
-// Circle sizes - balanced for good overlap areas
+// Circle sizes - NYC larger (more contacts)
 const circleSizes = {
-  'rock-academy': 36,
-  'woodstock-elementary': 38,
-  'nyc-friends': 38
+  'rock-academy': 34,
+  'woodstock-elementary': 36,
+  'nyc-friends': 42
 };
 
 // Circle layout - positioned for proper intersection zones
@@ -121,8 +121,8 @@ const circlePositions = {
   'chase-waverly': { x: 42, y: 78 },
   'cassie-riley': { x: 58, y: 78 },
 
-  // rock-academy + woodstock-elementary intersection: Sachs - centered in top overlap
-  'sachs': { x: 50, y: 30 },
+  // rock-academy + woodstock-elementary intersection: Sachs - in the top overlap almond
+  'sachs': { x: 50, y: 22 },
 
   // woodstock-elementary + nyc-friends intersection: Sarah - in right overlap
   'sarah': { x: 64, y: 52 },
