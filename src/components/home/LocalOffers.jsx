@@ -2,29 +2,6 @@ import { motion } from 'framer-motion';
 import { localOffers } from '../../data/seedData';
 import { useTheme } from '../../context/ThemeContext';
 
-// Mini circular logos for each business
-const MiniLogo = ({ business, color }) => {
-  // Get initials or short form for logo
-  const getLogoText = (name) => {
-    if (name.includes('Skate Time')) return 'ST';
-    if (name.includes('Shelter')) return 'S';
-    if (name.includes('Bounce')) return 'B';
-    if (name.includes('Tinker')) return 'TC';
-    return name.charAt(0);
-  };
-
-  return (
-    <div
-      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-      style={{ backgroundColor: color }}
-    >
-      <span className="text-[9px] font-bold text-white leading-none">
-        {getLogoText(business)}
-      </span>
-    </div>
-  );
-};
-
 export function LocalOffers() {
   const { theme, themeId } = useTheme();
   const isDark = themeId === 'midnight';
@@ -48,7 +25,11 @@ export function LocalOffers() {
               borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
             }}
           >
-            <MiniLogo business={offer.business} color={offer.color} />
+            <img
+              src={offer.logo}
+              alt={offer.business}
+              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+            />
             <span className="text-xs font-medium pr-1" style={{ color: theme.textPrimary }}>
               {offer.offer}
             </span>

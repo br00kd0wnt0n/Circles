@@ -157,7 +157,7 @@ export const localOffers = [
     offer: '2-for-1 admission',
     description: 'Bring a friend, skate for free!',
     validUntil: 'Weekdays until 4pm',
-    icon: '⛸️',
+    logo: '/logos/skatetime_logo.png',
     color: '#9CAF88'
   },
   {
@@ -166,7 +166,7 @@ export const localOffers = [
     offer: 'Kids eat free',
     description: 'Free kids meal with adult entrée',
     validUntil: 'Tuesdays 5-7pm',
-    icon: '🍔',
+    logo: '/logos/Shelter_logo.png',
     color: '#F4A69A'
   },
   {
@@ -175,25 +175,16 @@ export const localOffers = [
     offer: '20% off groups of 4+',
     description: 'Perfect for playdates!',
     validUntil: 'All week',
-    icon: '🎪',
+    logo: '/logos/Bounce_logo.png',
     color: '#94A3B8'
   },
   {
-    id: 'tinker-coffee',
-    business: 'Tinker Street Coffee',
+    id: 'bread-alone',
+    business: 'Bread Alone',
     offer: 'Free cookie with latte',
     description: 'Freshly baked daily',
     validUntil: 'Before noon',
-    icon: '☕',
+    logo: '/logos/BreadAlone_Logo.png',
     color: '#D4A574'
-  },
-  {
-    id: 'catskill-family',
-    business: 'Catskill Animal Sanctuary',
-    offer: 'Family 4-pack $40',
-    description: 'Save $20 on family admission',
-    validUntil: 'Weekends',
-    icon: '🐄',
-    color: '#8B9D77'
   }
 ];
