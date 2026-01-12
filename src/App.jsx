@@ -18,6 +18,7 @@ function App() {
   const [preselectedFriends, setPreselectedFriends] = useState([]);
   const [weather] = useState('sunny'); // sunny, cloudy, rainy
   const [showWelcome, setShowWelcome] = useState(true);
+  const [introRevealed, setIntroRevealed] = useState(false);
 
   const {
     myHousehold,
@@ -86,6 +87,7 @@ function App() {
         <WelcomeGreeting
           householdName={myHousehold.householdName}
           weather={weather}
+          onStartReveal={() => setIntroRevealed(true)}
           onComplete={() => setShowWelcome(false)}
         />
       )}
@@ -121,6 +123,7 @@ function App() {
               setMyStatus={setMyStatus}
               onCreateHangout={handleMakePlans}
               onOpenSettings={() => setShowSettings(true)}
+              introRevealed={introRevealed || !showWelcome}
             />
           </motion.div>
 
@@ -167,14 +170,23 @@ function App() {
           </AnimatePresence>
         </main>
 
-        {/* Bottom Navigation */}
-        <BottomNav
-          activeTab={activeTab}
-          viewMode={viewMode}
-          onTabChange={handleTabChange}
-          onMakePlans={() => handleMakePlans()}
-          onToggleView={handleToggleView}
-        />
+        {/* Bottom Navigation - animates up from bottom */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{
+            opacity: introRevealed || !showWelcome ? 1 : 0,
+            y: introRevealed || !showWelcome ? 0 : 50
+          }}
+          transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+        >
+          <BottomNav
+            activeTab={activeTab}
+            viewMode={viewMode}
+            onTabChange={handleTabChange}
+            onMakePlans={() => handleMakePlans()}
+            onToggleView={handleToggleView}
+          />
+        </motion.div>
 
         {/* Settings Screen */}
         <SettingsScreen

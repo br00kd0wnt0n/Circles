@@ -117,9 +117,9 @@ const circlePositions = {
   'smiths': { x: 80, y: 20 },
   'wangros': { x: 78, y: 36 },
 
-  // nyc-friends only: Chase+Waverly, Cassie+Riley - inside NYC
-  'chase-waverly': { x: 36, y: 72 },
-  'cassie-riley': { x: 58, y: 78 },
+  // nyc-friends only: Chase+Waverly, Cassie+Riley - inside NYC (spread apart)
+  'chase-waverly': { x: 30, y: 76 },
+  'cassie-riley': { x: 64, y: 82 },
 
   // rock-academy + woodstock-elementary intersection: Sachs - centered in top overlap
   'sachs': { x: 46, y: 22 },
@@ -140,13 +140,20 @@ const getShortName = (householdName) => {
   return householdName.replace(/^The\s+/i, '');
 };
 
+// Generate random intro delays for each household (memoized outside component)
+const introDelays = {};
+friendHouseholds.forEach((h, i) => {
+  introDelays[h.id] = Math.random() * 0.4; // Random delay between 0 and 0.4s
+});
+
 export function UnifiedHomeCircles({
   viewMode, // 'venn' or 'scattered'
   myHousehold,
   myStatus,
   setMyStatus,
   onCreateHangout,
-  onOpenSettings
+  onOpenSettings,
+  introRevealed = true // Controls intro animation
 }) {
   const { theme } = useTheme();
   const [selectedHousehold, setSelectedHousehold] = useState(null);
@@ -246,12 +253,16 @@ export function UnifiedHomeCircles({
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header - always visible */}
+      {/* Header - animates from top */}
       <motion.div
         className="flex-shrink-0"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1, marginBottom: 16 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        initial={{ opacity: 0, y: -30 }}
+        animate={{
+          opacity: introRevealed ? 1 : 0,
+          y: introRevealed ? 0 : -30,
+          marginBottom: 16
+        }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
       >
         <HeaderLockup
           household={myHousehold}
@@ -261,11 +272,11 @@ export function UnifiedHomeCircles({
         />
       </motion.div>
 
-      {/* Info Bar - always visible */}
+      {/* Info Bar - fades in */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        animate={{ opacity: introRevealed ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
         className="flex-shrink-0 flex items-center justify-between px-4 mb-3"
       >
         {/* Weather + Cycling Suggestion */}
@@ -308,15 +319,15 @@ export function UnifiedHomeCircles({
         <div className="relative w-full aspect-square max-w-[340px] max-h-[85%]">
           {/* Circle outlines - only show in circles view */}
           <AnimatePresence>
-            {isVennView && (
+            {isVennView && introRevealed && (
               <motion.svg
                 viewBox="-15 -15 130 130"
                 className="absolute inset-0 w-full h-full pointer-events-none"
                 style={{ overflow: 'visible' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
               >
                 <defs>
                   {/* Curved paths for text - positioned outside circles with more offset */}
@@ -416,21 +427,27 @@ export function UnifiedHomeCircles({
           const floatDuration = 4 + (index % 3) * 0.8;
           const floatDelay = index * 0.4;
 
+          // Random intro delay for this contact
+          const contactIntroDelay = introDelays[household.id] || 0.3;
+
           return (
             <motion.div
               key={household.id}
               className="absolute cursor-pointer"
+              initial={{ opacity: 0, scale: 0.3 }}
               animate={{
                 left: `${targetPos.x}%`,
                 top: `${targetPos.y}%`,
-                scale: isSelected ? 1.15 : isHovered ? 1.08 : 1,
+                scale: introRevealed ? (isSelected ? 1.15 : isHovered ? 1.08 : 1) : 0.3,
+                opacity: introRevealed ? 1 : 0,
               }}
-              initial={false}
               transition={{
                 type: 'spring',
                 stiffness: 200,
                 damping: 25,
-                mass: 1
+                mass: 1,
+                opacity: { duration: 0.5, ease: 'easeOut', delay: contactIntroDelay },
+                scale: { duration: 0.5, ease: 'easeOut', delay: contactIntroDelay }
               }}
               style={{ transform: 'translate(-50%, -50%)' }}
               onClick={() => setSelectedHousehold(household)}
@@ -507,12 +524,12 @@ export function UnifiedHomeCircles({
         </div>
       </div>
 
-      {/* Local Offers - always visible */}
+      {/* Local Offers - fades in */}
       <motion.div
         className="flex-shrink-0 overflow-hidden px-4"
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        animate={{ opacity: introRevealed ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
       >
         <LocalOffers />
       </motion.div>
