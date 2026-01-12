@@ -1,16 +1,34 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Clock, Tag } from 'lucide-react';
+import { X, MapPin, Clock, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { localOffers } from '../../data/seedData';
 import { useTheme } from '../../context/ThemeContext';
 
 export function LocalOffers() {
   const { theme, themeId } = useTheme();
   const isDark = themeId === 'midnight';
-  const [selectedOffer, setSelectedOffer] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   // Show all offers in compact format
   const displayOffers = localOffers.slice(0, 4);
+  const selectedOffer = selectedIndex !== null ? displayOffers[selectedIndex] : null;
+
+  const goToPrev = () => {
+    setSelectedIndex(prev => (prev === 0 ? displayOffers.length - 1 : prev - 1));
+  };
+
+  const goToNext = () => {
+    setSelectedIndex(prev => (prev === displayOffers.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleDragEnd = (event, info) => {
+    const swipeThreshold = 50;
+    if (info.offset.x > swipeThreshold) {
+      goToPrev();
+    } else if (info.offset.x < -swipeThreshold) {
+      goToNext();
+    }
+  };
 
   return (
     <>
@@ -19,7 +37,7 @@ export function LocalOffers() {
           {displayOffers.map((offer, index) => (
             <motion.button
               key={offer.id}
-              onClick={() => setSelectedOffer(offer)}
+              onClick={() => setSelectedIndex(index)}
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -44,7 +62,7 @@ export function LocalOffers() {
       </div>
 
       {/* Expanded Offer Overlay */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {selectedOffer && (
           <>
             {/* Backdrop */}
@@ -53,16 +71,44 @@ export function LocalOffers() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
-              onClick={() => setSelectedOffer(null)}
+              onClick={() => setSelectedIndex(null)}
             />
 
-            {/* Floating Card */}
+            {/* Navigation Arrows */}
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={goToPrev}
+              className="fixed left-2 top-1/2 -translate-y-1/2 z-50 p-2 rounded-full"
+              style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
+            >
+              <ChevronLeft size={24} style={{ color: isDark ? 'white' : '#1F2937' }} />
+            </motion.button>
+
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={goToNext}
+              className="fixed right-2 top-1/2 -translate-y-1/2 z-50 p-2 rounded-full"
+              style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
+            >
+              <ChevronRight size={24} style={{ color: isDark ? 'white' : '#1F2937' }} />
+            </motion.button>
+
+            {/* Floating Card - Swipeable */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              key={selectedOffer.id}
+              initial={{ opacity: 0, scale: 0.9, x: 50 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.9, x: -50 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed left-4 right-4 bottom-24 z-50 rounded-2xl p-5 shadow-xl max-w-sm mx-auto"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={handleDragEnd}
+              className="fixed left-4 right-4 bottom-24 z-50 rounded-2xl p-5 shadow-xl max-w-sm mx-auto cursor-grab active:cursor-grabbing"
               style={{
                 backgroundColor: isDark ? '#1E293B' : 'white',
                 border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`
@@ -70,15 +116,30 @@ export function LocalOffers() {
             >
               {/* Close button */}
               <button
-                onClick={() => setSelectedOffer(null)}
+                onClick={() => setSelectedIndex(null)}
                 className="absolute top-3 right-3 p-1.5 rounded-full transition-colors"
                 style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
               >
                 <X size={16} style={{ color: theme.textSecondary }} />
               </button>
 
+              {/* Carousel Indicators */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {displayOffers.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedIndex(idx)}
+                    className="w-1.5 h-1.5 rounded-full transition-all"
+                    style={{
+                      backgroundColor: idx === selectedIndex ? selectedOffer.color : (isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'),
+                      transform: idx === selectedIndex ? 'scale(1.3)' : 'scale(1)'
+                    }}
+                  />
+                ))}
+              </div>
+
               {/* Header */}
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-4 mt-2">
                 <img
                   src={selectedOffer.logo}
                   alt={selectedOffer.business}
