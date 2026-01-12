@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BottomNav } from './components/ui/BottomNav';
 import { UnifiedHomeCircles } from './components/home/UnifiedHomeCircles';
@@ -7,8 +7,11 @@ import { MakePlansOverlay } from './components/hangout/MakePlansOverlay';
 import { SettingsScreen } from './components/settings/SettingsScreen';
 import { WeatherBackground } from './components/ui/WeatherBackground';
 import { WelcomeGreeting } from './components/home/WelcomeGreeting';
+import { Toast } from './components/ui/Toast';
 import { useAppState } from './hooks/useLocalStorage';
 import { useTheme } from './context/ThemeContext';
+import { useToast } from './context/ToastContext';
+import { friendHouseholds } from './data/seedData';
 
 function App() {
   const [activeTab, setActiveTab] = useState('circles'); // circles is now the main view
@@ -31,6 +34,42 @@ function App() {
   } = useAppState();
 
   const { theme } = useTheme();
+  const { toast, showSuccess, showInvite, dismissToast } = useToast();
+
+  // Demo: Show a random incoming invite after intro completes
+  useEffect(() => {
+    if (!showWelcome && introRevealed) {
+      const randomDelay = 8000 + Math.random() * 7000; // 8-15 seconds after intro
+      const demoFriends = friendHouseholds.filter(h => h.status.state !== 'busy');
+      const randomFriend = demoFriends[Math.floor(Math.random() * demoFriends.length)];
+
+      const timer = setTimeout(() => {
+        if (randomFriend) {
+          // Create a real invite
+          const demoInvite = {
+            id: `demo-${Date.now()}`,
+            createdBy: randomFriend.id,
+            invitedHouseholds: [myHousehold.id],
+            activity: ['Coffee', 'Playdate', 'Dinner', 'Walk in the park'][Math.floor(Math.random() * 4)],
+            date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
+            time: ['10:00 AM', '2:00 PM', '6:00 PM'][Math.floor(Math.random() * 3)],
+            status: 'pending',
+            message: `Hey! Would love to catch up soon!`
+          };
+
+          addInvite(demoInvite);
+
+          showInvite(
+            'New invite!',
+            `${randomFriend.householdName} wants to hang out`,
+            () => setActiveTab('activity')
+          );
+        }
+      }, randomDelay);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showWelcome, introRevealed]);
 
   const isActivityView = activeTab === 'activity';
   const isMakePlansView = showMakePlans;
@@ -50,15 +89,14 @@ function App() {
   };
 
   const handleToggleView = () => {
-    // Close Activity when toggling circle view
-    if (activeTab === 'activity') {
+    // If Activity or Make Plans is open, just close them (don't toggle view)
+    if (activeTab === 'activity' || showMakePlans) {
       setActiveTab('circles');
-    }
-    // Close Make Plans if open
-    if (showMakePlans) {
       setShowMakePlans(false);
       setPreselectedFriends([]);
+      return;
     }
+    // Only toggle view mode if nothing is open
     setViewMode(prev => prev === 'venn' ? 'scattered' : 'venn');
   };
 
@@ -78,6 +116,17 @@ function App() {
     });
     setShowMakePlans(false);
     setPreselectedFriends([]);
+
+    // Show confirmation toast with invited friend names
+    const invitedNames = inviteData.invitedHouseholds
+      ?.map(id => friendHouseholds.find(h => h.id === id)?.householdName)
+      .filter(Boolean)
+      .join(', ');
+
+    showSuccess(
+      'Invite sent!',
+      invitedNames ? `To ${invitedNames}` : 'Your friends will be notified'
+    );
   };
 
   return (
@@ -168,6 +217,9 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Toast notifications - rolls up over Local Offers */}
+          <Toast toast={toast} onDismiss={dismissToast} />
         </main>
 
         {/* Bottom Navigation - animates up from bottom */}
