@@ -118,7 +118,7 @@ const circlePositions = {
   'wangros': { x: 78, y: 36 },
 
   // nyc-friends only: Chase+Waverly, Cassie+Riley - inside NYC
-  'chase-waverly': { x: 42, y: 78 },
+  'chase-waverly': { x: 36, y: 72 },
   'cassie-riley': { x: 58, y: 78 },
 
   // rock-academy + woodstock-elementary intersection: Sachs - centered in top overlap
