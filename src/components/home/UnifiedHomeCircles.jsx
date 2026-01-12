@@ -128,7 +128,7 @@ const circlePositions = {
   'sarah': { x: 64, y: 52 },
 
   // nyc-friends + rock-academy intersection: Asens - in left overlap
-  'asens': { x: 32, y: 48 },
+  'asens': { x: 26, y: 48 },
 
   // All three circles (center): Mandy - TRUE center of triple overlap
   'mandy': { x: 46, y: 42 },
