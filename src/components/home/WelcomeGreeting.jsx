@@ -126,12 +126,14 @@ export function WelcomeGreeting({ householdName, weather = 'sunny', onComplete, 
           x: '-50%',
           y: '-50%',
           scale: 1,
-          opacity: 0
+          opacity: 0,
+          pointerEvents: 'none'
         }}
         animate={{
           opacity: logoAnimating ? 0 : 1,
           top: logoAnimating ? 'calc(100% - 36px)' : '35%',
           scale: logoAnimating ? 0.4 : 1,
+          pointerEvents: 'none'
         }}
         transition={{
           opacity: { duration: 0.5, delay: logoAnimating ? 0.5 : 0 },

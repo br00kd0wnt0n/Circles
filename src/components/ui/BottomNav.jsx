@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -52,7 +53,7 @@ const ActivityIcon = ({ size = 28, isActive }) => (
   </svg>
 );
 
-export function BottomNav({ activeTab, viewMode, onTabChange, onMakePlans, onToggleView, showMakePlans }) {
+export function BottomNav({ activeTab, viewMode, onTabChange, onMakePlans, onToggleView, showMakePlans = false }) {
   const { theme, themeId } = useTheme();
   const isDark = themeId === 'midnight';
 
@@ -61,16 +62,16 @@ export function BottomNav({ activeTab, viewMode, onTabChange, onMakePlans, onTog
   const CircleIcon = viewMode === 'venn' ? SingleCircleIcon : VennIcon;
 
   // Check if any overlay is showing
-  const hasOverlay = activeTab === 'activity' || showMakePlans;
+  const isOnCircles = activeTab === 'circles' && !showMakePlans;
 
-  // Circle button handler - close overlays if showing, otherwise toggle view
-  const handleCircleClick = () => {
-    if (hasOverlay) {
+  // Handler for circle button - useCallback ensures fresh reference when deps change
+  const handleCirclePress = useCallback(() => {
+    if (activeTab !== 'circles' || showMakePlans) {
       onTabChange('circles');
     } else {
       onToggleView();
     }
-  };
+  }, [activeTab, showMakePlans, onTabChange, onToggleView]);
 
   return (
     <nav
@@ -94,15 +95,15 @@ export function BottomNav({ activeTab, viewMode, onTabChange, onMakePlans, onTog
 
         {/* Circles Toggle - Center */}
         <motion.button
-          onClick={handleCircleClick}
+          onClick={handleCirclePress}
           className="flex items-center justify-center p-3 min-w-[48px] min-h-[48px] rounded-full transition-colors"
           style={{
-            color: !hasOverlay ? theme.cta : theme.textSecondary,
-            backgroundColor: !hasOverlay ? `${theme.cta}15` : 'transparent'
+            color: isOnCircles ? theme.cta : theme.textSecondary,
+            backgroundColor: isOnCircles ? `${theme.cta}15` : 'transparent'
           }}
           whileTap={{ scale: 0.9 }}
         >
-          <CircleIcon size={28} isActive={!hasOverlay} />
+          <CircleIcon size={28} isActive={isOnCircles} />
         </motion.button>
 
         {/* Activity */}
