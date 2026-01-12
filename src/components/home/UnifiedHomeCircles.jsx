@@ -350,9 +350,9 @@ export function UnifiedHomeCircles({
                   />
                   <path
                     id="nycFriendsPath"
-                    d={`M ${circleLayout['nyc-friends'].cx - circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r + 2}
-                        A ${circleLayout['nyc-friends'].r + 2} ${circleLayout['nyc-friends'].r + 2} 0 0 0
-                        ${circleLayout['nyc-friends'].cx + circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r + 2}`}
+                    d={`M ${circleLayout['nyc-friends'].cx - circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r + 6}
+                        A ${circleLayout['nyc-friends'].r + 6} ${circleLayout['nyc-friends'].r + 6} 0 0 0
+                        ${circleLayout['nyc-friends'].cx + circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r + 6}`}
                     fill="none"
                   />
                 </defs>
