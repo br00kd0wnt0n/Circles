@@ -4,19 +4,19 @@ import { useMemo } from 'react';
 // Weather types with associated visual properties
 const weatherStyles = {
   sunny: {
-    gradient: 'from-amber-50/30 via-transparent to-transparent',
-    particleColor: 'rgba(251, 191, 36, 0.15)',
-    particleCount: 8
+    gradient: 'from-amber-100/50 via-amber-50/20 to-transparent',
+    particleColor: 'rgba(251, 191, 36, 0.4)',
+    particleCount: 12
   },
   cloudy: {
-    gradient: 'from-slate-100/40 via-transparent to-transparent',
-    particleColor: 'rgba(148, 163, 184, 0.12)',
-    particleCount: 5
+    gradient: 'from-slate-200/50 via-slate-100/30 to-transparent',
+    particleColor: 'rgba(148, 163, 184, 0.3)',
+    particleCount: 8
   },
   rainy: {
-    gradient: 'from-blue-100/30 via-transparent to-transparent',
-    particleColor: 'rgba(147, 197, 253, 0.2)',
-    particleCount: 12
+    gradient: 'from-blue-200/40 via-blue-100/20 to-transparent',
+    particleColor: 'rgba(147, 197, 253, 0.5)',
+    particleCount: 20
   }
 };
 
@@ -69,7 +69,7 @@ export function WeatherBackground({ weather = 'sunny' }) {
           // Sun rays or cloud puffs - gentle floating motion
           <motion.div
             key={particle.id}
-            className="absolute rounded-full blur-xl"
+            className="absolute rounded-full blur-lg"
             style={{
               left: `${particle.x}%`,
               top: `${particle.y}%`,
@@ -78,10 +78,10 @@ export function WeatherBackground({ weather = 'sunny' }) {
               backgroundColor: style.particleColor,
             }}
             animate={{
-              x: [0, 10, 0, -10, 0],
-              y: [0, -10, 0, 10, 0],
-              opacity: [0.3, 0.5, 0.3, 0.5, 0.3],
-              scale: [1, 1.1, 1, 0.9, 1]
+              x: [0, 15, 0, -15, 0],
+              y: [0, -15, 0, 15, 0],
+              opacity: [0.5, 0.9, 0.5, 0.9, 0.5],
+              scale: [1, 1.2, 1, 0.9, 1]
             }}
             transition={{
               duration: particle.duration,
@@ -96,14 +96,14 @@ export function WeatherBackground({ weather = 'sunny' }) {
       {/* Sun glow effect for sunny weather */}
       {weather === 'sunny' && (
         <motion.div
-          className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl"
-          style={{ backgroundColor: 'rgba(251, 191, 36, 0.08)' }}
+          className="absolute -top-10 -right-10 w-80 h-80 rounded-full blur-3xl"
+          style={{ backgroundColor: 'rgba(251, 191, 36, 0.25)' }}
           animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.5, 0.7, 0.5]
+            scale: [1, 1.15, 1],
+            opacity: [0.6, 0.9, 0.6]
           }}
           transition={{
-            duration: 8,
+            duration: 6,
             repeat: Infinity,
             ease: 'easeInOut'
           }}
@@ -114,25 +114,25 @@ export function WeatherBackground({ weather = 'sunny' }) {
       {weather === 'cloudy' && (
         <>
           <motion.div
-            className="absolute top-10 left-10 w-48 h-24 rounded-full blur-2xl"
-            style={{ backgroundColor: 'rgba(148, 163, 184, 0.08)' }}
+            className="absolute top-10 left-10 w-64 h-32 rounded-full blur-2xl"
+            style={{ backgroundColor: 'rgba(148, 163, 184, 0.25)' }}
             animate={{
-              x: [0, 30, 0],
+              x: [0, 40, 0],
             }}
             transition={{
-              duration: 20,
+              duration: 15,
               repeat: Infinity,
               ease: 'easeInOut'
             }}
           />
           <motion.div
-            className="absolute top-20 right-20 w-32 h-16 rounded-full blur-2xl"
-            style={{ backgroundColor: 'rgba(148, 163, 184, 0.06)' }}
+            className="absolute top-24 right-10 w-48 h-24 rounded-full blur-2xl"
+            style={{ backgroundColor: 'rgba(148, 163, 184, 0.2)' }}
             animate={{
-              x: [0, -20, 0],
+              x: [0, -30, 0],
             }}
             transition={{
-              duration: 15,
+              duration: 12,
               repeat: Infinity,
               ease: 'easeInOut'
             }}

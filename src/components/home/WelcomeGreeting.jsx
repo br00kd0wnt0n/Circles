@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 
 const weatherDescriptions = {
-  sunny: 'beautiful and sunny',
-  cloudy: 'nice and cloudy',
+  sunny: 'sunny and beautiful',
+  cloudy: 'cloudy but nice',
   rainy: 'a bit rainy'
 };
 
@@ -63,7 +63,7 @@ const CirclesLogo = ({ size = 60, color, showVenn = true }) => (
   </svg>
 );
 
-export function WelcomeGreeting({ householdName, weather = 'sunny', onComplete, onStartReveal }) {
+export function WelcomeGreeting({ householdName, weather = 'sunny', temperature = 72, onComplete, onStartReveal }) {
   const { theme } = useTheme();
   const [phase, setPhase] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
@@ -73,6 +73,7 @@ export function WelcomeGreeting({ householdName, weather = 'sunny', onComplete, 
   const timeOfDay = getTimeOfDay();
   const weatherDesc = weatherDescriptions[weather] || weatherDescriptions.sunny;
   const shortName = householdName?.replace('The ', '') || 'Friend';
+  const tempDisplay = `${temperature}°`;
 
   // Phase timings (total ~7 seconds)
   // 0: Logo appears (0-0.8s)
@@ -211,7 +212,9 @@ export function WelcomeGreeting({ householdName, weather = 'sunny', onComplete, 
                 className="text-lg"
                 style={{ color: theme.textSecondary }}
               >
-                Looks like today is going to be{' '}
+                It's{' '}
+                <span style={{ color: theme.cta }} className="font-medium">{tempDisplay}</span>
+                {' '}and{' '}
                 <span style={{ color: theme.cta }} className="font-medium">{weatherDesc}</span>
               </p>
             </motion.div>

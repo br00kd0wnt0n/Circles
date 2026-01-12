@@ -5,7 +5,6 @@ import { UnifiedHomeCircles } from './components/home/UnifiedHomeCircles';
 import { ActivityScreen } from './components/activity/ActivityScreen';
 import { MakePlansOverlay } from './components/hangout/MakePlansOverlay';
 import { SettingsScreen } from './components/settings/SettingsScreen';
-import { WeatherBackground } from './components/ui/WeatherBackground';
 import { WelcomeGreeting } from './components/home/WelcomeGreeting';
 import { Toast } from './components/ui/Toast';
 import { useAppState } from './hooks/useLocalStorage';
@@ -20,6 +19,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [preselectedFriends, setPreselectedFriends] = useState([]);
   const [weather] = useState('sunny'); // sunny, cloudy, rainy
+  const [temperature] = useState(72); // temperature in Fahrenheit
   const [showWelcome, setShowWelcome] = useState(true);
   const [introRevealed, setIntroRevealed] = useState(false);
 
@@ -122,20 +122,30 @@ function App() {
     );
   };
 
+  // Darken/lighten the outer background to contrast with mobile frame
+  const isDark = theme.id === 'midnight';
+  const outerBg = isDark
+    ? 'rgba(0, 0, 0, 0.4)'
+    : 'rgba(0, 0, 0, 0.06)';
+
   return (
-    <div className="h-full transition-colors duration-500" style={{ backgroundColor: theme.background }}>
+    <div
+      className="h-full transition-colors duration-500"
+      style={{
+        background: `linear-gradient(${outerBg}, ${outerBg}), ${theme.background}`
+      }}
+    >
       {/* Welcome Greeting - shows on first load */}
       {showWelcome && (
         <WelcomeGreeting
           householdName={myHousehold.householdName}
           weather={weather}
+          temperature={temperature}
           onStartReveal={() => setIntroRevealed(true)}
           onComplete={() => setShowWelcome(false)}
         />
       )}
 
-      {/* Weather Background */}
-      <WeatherBackground weather={weather} />
 
       {/* App Container - full screen on mobile, centered frame on desktop */}
       <div
