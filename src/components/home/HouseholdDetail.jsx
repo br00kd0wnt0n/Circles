@@ -123,7 +123,7 @@ export function HouseholdDetail({ household, isOpen, onClose, onInvite }) {
                 disabled={household.status.state === 'busy'}
               >
                 <Calendar size={18} />
-                Invite to Hangout
+                Make Plans
               </Button>
             </div>
             {/* Safe area padding for nav bar */}
