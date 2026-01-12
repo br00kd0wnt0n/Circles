@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Mic, X, ChevronLeft, MessageCircle } from 'lucide-react';
+import { X, ChevronLeft, Plus, MessageCircle } from 'lucide-react';
 import { HeaderLockup } from './HeaderLockup';
 import { LocalOffers } from './LocalOffers';
 import { HouseholdDetail } from './HouseholdDetail';
@@ -155,7 +155,7 @@ const getShortName = (householdName) => {
 };
 
 export function UnifiedHomeCircles({
-  viewMode, // 'home' or 'circles'
+  viewMode, // 'venn' or 'scattered'
   myHousehold,
   myStatus,
   setMyStatus,
@@ -166,7 +166,6 @@ export function UnifiedHomeCircles({
   const [selectedHousehold, setSelectedHousehold] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [showStatusEditor, setShowStatusEditor] = useState(false);
-  const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [selectedCircle, setSelectedCircle] = useState(null);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
@@ -257,18 +256,15 @@ export function UnifiedHomeCircles({
     return { available: available.length, total: liveHouseholds.length };
   }, [liveHouseholds]);
 
-  const isCirclesView = viewMode === 'circles';
+  const isVennView = viewMode === 'venn';
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header - slides up when in circles view */}
+      {/* Header - always visible */}
       <motion.div
         className="flex-shrink-0"
-        animate={{
-          height: isCirclesView ? 0 : 'auto',
-          opacity: isCirclesView ? 0 : 1,
-          marginBottom: isCirclesView ? 0 : 16
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, marginBottom: 16 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         <HeaderLockup
@@ -282,10 +278,7 @@ export function UnifiedHomeCircles({
       {/* Info Bar - always visible */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{
-          opacity: 1,
-          paddingTop: isCirclesView ? 24 : 0
-        }}
+        animate={{ opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className="flex-shrink-0 flex items-center justify-between px-4 mb-3"
       >
@@ -329,7 +322,7 @@ export function UnifiedHomeCircles({
         <div className="relative w-full aspect-square max-w-[340px] max-h-full">
           {/* Circle outlines - only show in circles view */}
           <AnimatePresence>
-            {isCirclesView && (
+            {isVennView && (
               <motion.svg
                 viewBox="-15 -15 130 130"
                 className="absolute inset-0 w-full h-full pointer-events-none"
@@ -425,7 +418,7 @@ export function UnifiedHomeCircles({
           {liveHouseholds.map((household, index) => {
           const scatteredPos = scatteredPositions[household.id] || { x: 50, y: 50 };
           const circlePos = circlePositions[household.id] || scatteredPos;
-          const targetPos = isCirclesView ? circlePos : scatteredPos;
+          const targetPos = isVennView ? circlePos : scatteredPos;
 
           const color = statusColors[household.status.state] || statusColors.busy;
           const isSelected = selectedHousehold?.id === household.id;
@@ -528,94 +521,15 @@ export function UnifiedHomeCircles({
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex-shrink-0 py-3 flex justify-center gap-2">
-        <motion.button
-          onClick={() => onCreateHangout()}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm shadow-md transition-colors"
-          style={{ backgroundColor: theme.cta, color: theme.ctaText }}
-          whileHover={{ backgroundColor: theme.ctaHover }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Plus size={18} />
-          <span>Make Plans</span>
-        </motion.button>
-
-        <motion.button
-          onClick={() => setShowVoiceMode(true)}
-          className="flex items-center justify-center w-11 h-11 rounded-xl shadow-md transition-colors"
-          style={{ backgroundColor: theme.cta, color: theme.ctaText }}
-          whileHover={{ backgroundColor: theme.ctaHover }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Mic size={20} />
-        </motion.button>
-      </div>
-
-      {/* Local Offers - slides down when in circles view */}
+      {/* Local Offers - always visible */}
       <motion.div
         className="flex-shrink-0 overflow-hidden px-4"
-        animate={{
-          height: isCirclesView ? 0 : 'auto',
-          opacity: isCirclesView ? 0 : 1
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         <LocalOffers />
       </motion.div>
-
-      {/* Voice Mode Dialog */}
-      <AnimatePresence>
-        {showVoiceMode && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/30 z-40"
-              onClick={() => setShowVoiceMode(false)}
-            />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 p-6"
-            >
-              <div className="flex justify-center -mt-3 mb-4">
-                <div className="w-10 h-1 bg-gray-300 rounded-full" />
-              </div>
-              <button
-                onClick={() => setShowVoiceMode(false)}
-                className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full"
-              >
-                <X size={20} className="text-[#6B7280]" />
-              </button>
-              <div className="text-center pb-8">
-                <motion.div
-                  className="w-20 h-20 mx-auto mb-5 bg-[#9CAF88]/10 rounded-full flex items-center justify-center"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <motion.div
-                    className="w-14 h-14 bg-[#9CAF88] rounded-full flex items-center justify-center text-white"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <Mic size={28} />
-                  </motion.div>
-                </motion.div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-2">
-                  What can I help you set up?
-                </h3>
-                <p className="text-sm text-[#6B7280] max-w-[280px] mx-auto">
-                  Just tell me who you want to hang with and I'll find you options that work!
-                </p>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* Circle Detail - Full Screen Zoom */}
       <AnimatePresence mode="sync">

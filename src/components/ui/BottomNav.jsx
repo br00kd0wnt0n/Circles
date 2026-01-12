@@ -1,23 +1,8 @@
 import { motion } from 'framer-motion';
+import { Plus } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
-// Home icon - house outline
-const HomeIcon = ({ size = 28, isActive }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={isActive ? 2.5 : 1.5}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-  </svg>
-);
-
-// Circle icon - simple circle
+// Circle icon - venn diagram style for circles view
 const CircleIcon = ({ size = 28, isActive }) => (
   <svg
     width={size}
@@ -29,7 +14,9 @@ const CircleIcon = ({ size = 28, isActive }) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <circle cx="12" cy="12" r="9" />
+    <circle cx="9" cy="10" r="6" />
+    <circle cx="15" cy="10" r="6" />
+    <circle cx="12" cy="15" r="6" />
   </svg>
 );
 
@@ -49,13 +36,7 @@ const ActivityIcon = ({ size = 28, isActive }) => (
   </svg>
 );
 
-const tabs = [
-  { id: 'home', icon: HomeIcon },
-  { id: 'circles', icon: CircleIcon },
-  { id: 'activity', icon: ActivityIcon }
-];
-
-export function BottomNav({ activeTab, onTabChange }) {
+export function BottomNav({ activeTab, onTabChange, onMakePlans, onToggleView }) {
   const { theme, themeId } = useTheme();
   const isDark = themeId === 'midnight';
 
@@ -69,25 +50,38 @@ export function BottomNav({ activeTab, onTabChange }) {
       }}
     >
       <div className="flex justify-center items-center gap-12 sm:gap-16 h-14 max-w-md mx-auto">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+        {/* Make Plans Button */}
+        <motion.button
+          onClick={onMakePlans}
+          className="flex items-center justify-center p-3 min-w-[48px] min-h-[48px] transition-colors"
+          style={{ color: theme.textSecondary }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <Plus size={28} strokeWidth={1.5} />
+        </motion.button>
 
-          return (
-            <motion.button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className="flex items-center justify-center p-3 min-w-[48px] min-h-[48px] transition-colors"
-              style={{ color: isActive ? theme.cta : theme.textSecondary }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Icon
-                size={28}
-                isActive={isActive}
-              />
-            </motion.button>
-          );
-        })}
+        {/* Circles Toggle - Center */}
+        <motion.button
+          onClick={onToggleView}
+          className="flex items-center justify-center p-3 min-w-[48px] min-h-[48px] rounded-full transition-colors"
+          style={{
+            color: activeTab === 'circles' ? theme.cta : theme.textSecondary,
+            backgroundColor: activeTab === 'circles' ? `${theme.cta}15` : 'transparent'
+          }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <CircleIcon size={28} isActive={activeTab === 'circles'} />
+        </motion.button>
+
+        {/* Activity */}
+        <motion.button
+          onClick={() => onTabChange('activity')}
+          className="flex items-center justify-center p-3 min-w-[48px] min-h-[48px] transition-colors"
+          style={{ color: activeTab === 'activity' ? theme.cta : theme.textSecondary }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <ActivityIcon size={28} isActive={activeTab === 'activity'} />
+        </motion.button>
       </div>
     </nav>
   );

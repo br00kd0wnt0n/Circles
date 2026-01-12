@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BottomNav } from './components/ui/BottomNav';
 import { UnifiedHomeCircles } from './components/home/UnifiedHomeCircles';
 import { ActivityScreen } from './components/activity/ActivityScreen';
-import { CreateHangout } from './components/hangout/CreateHangout';
+import { MakePlansOverlay } from './components/hangout/MakePlansOverlay';
 import { SettingsScreen } from './components/settings/SettingsScreen';
 import { WeatherBackground } from './components/ui/WeatherBackground';
 import { WelcomeGreeting } from './components/home/WelcomeGreeting';
@@ -11,9 +11,9 @@ import { useAppState } from './hooks/useLocalStorage';
 import { useTheme } from './context/ThemeContext';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('home');
-  const [backgroundView, setBackgroundView] = useState('home'); // tracks home/circles for when activity is shown
-  const [showCreateHangout, setShowCreateHangout] = useState(false);
+  const [activeTab, setActiveTab] = useState('circles'); // circles is now the main view
+  const [viewMode, setViewMode] = useState('venn'); // 'venn' or 'scattered'
+  const [showMakePlans, setShowMakePlans] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [preselectedFriends, setPreselectedFriends] = useState([]);
   const [weather] = useState('sunny'); // sunny, cloudy, rainy
@@ -32,17 +32,19 @@ function App() {
   const { theme } = useTheme();
 
   const isActivityView = activeTab === 'activity';
+  const isMakePlansView = showMakePlans;
 
   const handleTabChange = (tab) => {
-    if (tab === 'home' || tab === 'circles') {
-      setBackgroundView(tab);
-    }
     setActiveTab(tab);
   };
 
-  const handleCreateHangout = (friendIds = []) => {
+  const handleToggleView = () => {
+    setViewMode(prev => prev === 'venn' ? 'scattered' : 'venn');
+  };
+
+  const handleMakePlans = (friendIds = []) => {
     setPreselectedFriends(friendIds);
-    setShowCreateHangout(true);
+    setShowMakePlans(true);
   };
 
   const handleSendInvite = (inviteData) => {
@@ -50,6 +52,8 @@ function App() {
       createdBy: myHousehold.id,
       ...inviteData
     });
+    setShowMakePlans(false);
+    setPreselectedFriends([]);
   };
 
   return (
@@ -77,22 +81,22 @@ function App() {
       >
         {/* Main Content */}
         <main className="pb-20 relative z-10 h-full overflow-hidden">
-          {/* Unified Home/Circles View - always rendered, blurs when activity is shown */}
+          {/* Circles View - always rendered, blurs when overlay is shown */}
           <motion.div
             className="h-full"
             animate={{
-              filter: isActivityView ? 'blur(20px)' : 'blur(0px)',
-              scale: isActivityView ? 1.05 : 1,
-              opacity: isActivityView ? 0.6 : 1,
+              filter: (isActivityView || isMakePlansView) ? 'blur(20px)' : 'blur(0px)',
+              scale: (isActivityView || isMakePlansView) ? 1.05 : 1,
+              opacity: (isActivityView || isMakePlansView) ? 0.6 : 1,
             }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
             <UnifiedHomeCircles
-              viewMode={isActivityView ? backgroundView : activeTab}
+              viewMode={viewMode}
               myHousehold={myHousehold}
               myStatus={myStatus}
               setMyStatus={setMyStatus}
-              onCreateHangout={handleCreateHangout}
+              onCreateHangout={handleMakePlans}
               onOpenSettings={() => setShowSettings(true)}
             />
           </motion.div>
@@ -115,20 +119,37 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Make Plans Overlay */}
+          <AnimatePresence>
+            {isMakePlansView && (
+              <motion.div
+                key="makeplans"
+                className="absolute inset-0 z-20 overflow-y-auto"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 40 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              >
+                <MakePlansOverlay
+                  onClose={() => {
+                    setShowMakePlans(false);
+                    setPreselectedFriends([]);
+                  }}
+                  onSend={handleSendInvite}
+                  preselectedFriends={preselectedFriends}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
 
         {/* Bottom Navigation */}
-        <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
-
-        {/* Create Hangout Modal */}
-        <CreateHangout
-          isOpen={showCreateHangout}
-          onClose={() => {
-            setShowCreateHangout(false);
-            setPreselectedFriends([]);
-          }}
-          onSend={handleSendInvite}
-          preselectedFriends={preselectedFriends}
+        <BottomNav
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          onMakePlans={() => handleMakePlans()}
+          onToggleView={handleToggleView}
         />
 
         {/* Settings Screen */}
