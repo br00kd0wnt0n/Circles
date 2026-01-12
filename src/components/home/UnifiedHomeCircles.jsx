@@ -290,7 +290,7 @@ export function UnifiedHomeCircles({
         className="flex-shrink-0 flex items-center justify-between px-4 mb-3"
       >
         {/* Weather + Cycling Suggestion */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="text-sm" style={{ color: theme.textSecondary }}>
             <span className="font-medium">72°</span>
             <div className="text-xs">Sunny</div>
@@ -298,23 +298,21 @@ export function UnifiedHomeCircles({
           {activitySuggestions.length > 0 && (
             <>
               <div className="h-6 w-px" style={{ backgroundColor: `${theme.textSecondary}30` }} />
-              <div className="relative h-8 flex-1 max-w-[180px] overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={suggestionIndex}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
-                    className="absolute inset-0 flex items-center gap-1.5"
-                  >
-                    <span className="text-base">{activitySuggestions[suggestionIndex % activitySuggestions.length]?.emoji}</span>
-                    <span className="text-[11px] font-medium truncate" style={{ color: theme.textSecondary }}>
-                      {activitySuggestions[suggestionIndex % activitySuggestions.length]?.text}
-                    </span>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={suggestionIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className="flex items-center gap-1"
+                >
+                  <span className="text-sm">{activitySuggestions[suggestionIndex % activitySuggestions.length]?.emoji}</span>
+                  <span className="text-[11px] font-medium" style={{ color: theme.textSecondary }}>
+                    {activitySuggestions[suggestionIndex % activitySuggestions.length]?.text}
+                  </span>
+                </motion.div>
+              </AnimatePresence>
             </>
           )}
         </div>
