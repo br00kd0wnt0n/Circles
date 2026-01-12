@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Mic, X, ChevronLeft } from 'lucide-react';
+import { Plus, Mic, X, ChevronLeft, MessageCircle } from 'lucide-react';
 import { HeaderLockup } from './HeaderLockup';
 import { LocalOffers } from './LocalOffers';
 import { HouseholdDetail } from './HouseholdDetail';
@@ -636,38 +636,27 @@ export function UnifiedHomeCircles({
               exit={{ opacity: 0, y: -20, transition: { duration: 0.15 } }}
               transition={{ delay: 0.25, duration: 0.35, ease: 'easeOut' }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setSelectedCircle(null)}
-                    className="p-2 -ml-2 bg-white/20 hover:bg-white/40 rounded-full transition-colors"
-                  >
-                    <ChevronLeft size={24} className="text-white" />
-                  </button>
-                  <div>
-                    <h2 className="text-xl font-semibold text-white">
-                      {selectedCircleData.name}
-                    </h2>
-                    <p className="text-sm text-white/80">
-                      {selectedCircleMembers.length} households · {selectedCircleMembers.filter(m => m.status.state !== 'busy').length} available
-                    </p>
-                  </div>
-                </div>
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    onCreateHangout(selectedCircleMembers.filter(m => m.status.state !== 'busy').map(m => m.id));
-                    setSelectedCircle(null);
-                  }}
-                  className="px-4 py-2 bg-white/90 hover:bg-white text-gray-800 rounded-xl font-medium text-sm shadow-sm transition-colors"
+                  onClick={() => setSelectedCircle(null)}
+                  className="p-2 -ml-2 bg-white/20 hover:bg-white/40 rounded-full transition-colors"
                 >
-                  Invite All
+                  <ChevronLeft size={24} className="text-white" />
                 </button>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">
+                    {selectedCircleData.name}
+                  </h2>
+                  <p className="text-sm text-white/80">
+                    {selectedCircleMembers.length} households · {selectedCircleMembers.filter(m => m.status.state !== 'busy').length} available
+                  </p>
+                </div>
               </div>
             </motion.div>
 
             {/* Member List */}
             <motion.div
-              className="relative z-10 flex-1 overflow-y-auto px-4 pb-20"
+              className="relative z-10 flex-1 overflow-y-auto px-4 pb-32"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, transition: { duration: 0.1 } }}
@@ -729,6 +718,41 @@ export function UnifiedHomeCircles({
                     </div>
                   </motion.div>
                 ))}
+              </div>
+            </motion.div>
+
+            {/* Bottom Action Bar */}
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-6 pt-4"
+              style={{
+                background: `linear-gradient(to top, ${selectedCircleData.color} 70%, transparent)`
+              }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20, transition: { duration: 0.1 } }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+            >
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    onCreateHangout(selectedCircleMembers.filter(m => m.status.state !== 'busy').map(m => m.id));
+                    setSelectedCircle(null);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/90 hover:bg-white text-gray-800 rounded-xl font-medium shadow-lg transition-colors"
+                >
+                  <Plus size={20} />
+                  Invite All
+                </button>
+                <button
+                  onClick={() => {
+                    // TODO: Implement message all functionality
+                    console.log('Message all in circle:', selectedCircle);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors"
+                >
+                  <MessageCircle size={20} />
+                  Message All
+                </button>
               </div>
             </motion.div>
           </motion.div>
