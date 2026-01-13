@@ -7,6 +7,7 @@ import { MakePlansOverlay } from './components/hangout/MakePlansOverlay';
 import { SettingsScreen } from './components/settings/SettingsScreen';
 import { WelcomeGreeting } from './components/home/WelcomeGreeting';
 import { Toast } from './components/ui/Toast';
+import { InstallPrompt } from './components/ui/InstallPrompt';
 import { useAppState } from './hooks/useLocalStorage';
 import { useTheme } from './context/ThemeContext';
 import { useToast } from './context/ToastContext';
@@ -251,6 +252,9 @@ function App() {
           household={myHousehold}
           onUpdateHousehold={updateHousehold}
         />
+
+        {/* PWA Install Prompt */}
+        <InstallPrompt />
       </div>
     </div>
   );
