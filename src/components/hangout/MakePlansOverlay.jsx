@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Mic, Calendar, MapPin, Users } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { friendHouseholds, activities, timeSlots } from '../../data/seedData';
+import { useData } from '../../context/DataContext';
+import { activities, timeSlots } from '../../data/seedData';
 
 const dateOptions = [
   { id: 'today', label: 'Today' },
@@ -12,6 +13,7 @@ const dateOptions = [
 
 export function MakePlansOverlay({ onClose, onSend, preselectedFriends = [] }) {
   const { theme, themeId } = useTheme();
+  const { friendHouseholds } = useData();
   const isDark = themeId === 'midnight';
 
   const [selectedDate, setSelectedDate] = useState(null);

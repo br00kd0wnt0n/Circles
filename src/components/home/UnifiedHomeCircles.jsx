@@ -7,8 +7,10 @@ import { HouseholdDetail } from './HouseholdDetail';
 import { StatusEditor } from './StatusEditor';
 import { MessageComposer } from '../messaging/MessageComposer';
 import { StatusDot } from '../ui/StatusDot';
-import { friendHouseholds, circles, localOffers } from '../../data/seedData';
 import { useTheme } from '../../context/ThemeContext';
+import { useData } from '../../context/DataContext';
+// Import seedData just for initial intro delays (computed at load time)
+import { friendHouseholds as seedFriends } from '../../data/seedData';
 
 // Generate dynamic activity suggestions based on context
 const generateSuggestions = (households, weather = 'sunny') => {
@@ -142,7 +144,7 @@ const getShortName = (householdName) => {
 
 // Generate random intro delays for each household (memoized outside component)
 const introDelays = {};
-friendHouseholds.forEach((h, i) => {
+seedFriends.forEach((h, i) => {
   introDelays[h.id] = Math.random() * 0.4; // Random delay between 0 and 0.4s
 });
 
@@ -156,6 +158,7 @@ export function UnifiedHomeCircles({
   introRevealed = true // Controls intro animation
 }) {
   const { theme } = useTheme();
+  const { friendHouseholds, circles, offers } = useData();
   const [selectedHousehold, setSelectedHousehold] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [showStatusEditor, setShowStatusEditor] = useState(false);
@@ -163,8 +166,15 @@ export function UnifiedHomeCircles({
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
 
-  // Local state for simulated household updates
+  // Live households from context (updates via socket)
   const [liveHouseholds, setLiveHouseholds] = useState(friendHouseholds);
+
+  // Sync with context when friendHouseholds changes
+  useEffect(() => {
+    if (friendHouseholds?.length > 0) {
+      setLiveHouseholds(friendHouseholds);
+    }
+  }, [friendHouseholds]);
 
   // Generate dynamic suggestions based on available friends and weather
   const activitySuggestions = useMemo(() => {

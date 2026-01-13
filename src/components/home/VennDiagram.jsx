@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusDot } from '../ui/StatusDot';
-import { circles, friendHouseholds } from '../../data/seedData';
+import { useData } from '../../context/DataContext';
 
 // Calculate which zone a household belongs to based on their circles
 const getZoneKey = (circleIds) => {
@@ -10,6 +10,7 @@ const getZoneKey = (circleIds) => {
 };
 
 export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
+  const { circles, friendHouseholds } = useData();
   const [hoveredHousehold, setHoveredHousehold] = useState(null);
   const [hoveredCircle, setHoveredCircle] = useState(null);
 

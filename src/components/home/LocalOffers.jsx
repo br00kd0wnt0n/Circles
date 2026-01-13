@@ -1,27 +1,42 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Clock, Tag, ArrowLeft, Navigation } from 'lucide-react';
-import { localOffers } from '../../data/seedData';
 import { useTheme } from '../../context/ThemeContext';
-
-// Mock coordinates for demo - would come from seedData in production
-const offerLocations = {
-  'skate-time-deal': { lat: 41.9270, lng: -74.0261, address: '1000 Ulster Ave, Kingston, NY' },
-  'shelter-happy': { lat: 42.0825, lng: -74.3107, address: '2 Church St, Phoenicia, NY' },
-  'bounce-group': { lat: 41.9270, lng: -74.0261, address: '1200 Ulster Ave, Kingston, NY' },
-  'bread-alone': { lat: 42.0412, lng: -74.1179, address: '22 Mill Hill Rd, Woodstock, NY' }
-};
+import { useData } from '../../context/DataContext';
+// Fallback offers from seedData
+import { localOffers as seedOffers } from '../../data/seedData';
 
 export function LocalOffers() {
   const { theme, themeId } = useTheme();
+  const { offers } = useData();
   const isDark = themeId === 'midnight';
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [showMap, setShowMap] = useState(false);
 
-  // Show all offers in compact format
-  const displayOffers = localOffers.slice(0, 4);
+  // Use API offers or fallback to seed data
+  const displayOffers = useMemo(() => {
+    if (offers?.length > 0) {
+      // Transform API offers to match expected format
+      return offers.slice(0, 4).map(o => ({
+        id: o.id,
+        title: o.title,
+        subtitle: o.business?.name || '',
+        description: o.description,
+        color: o.color || '#9CAF88',
+        tag: o.promoCode ? `Code: ${o.promoCode}` : 'Special Offer',
+        validUntil: o.validUntil,
+        business: o.business
+      }));
+    }
+    return seedOffers.slice(0, 4);
+  }, [offers]);
   const selectedOffer = selectedIndex !== null ? displayOffers[selectedIndex] : null;
-  const location = selectedOffer ? offerLocations[selectedOffer.id] : null;
+  // Get location from business or offer data
+  const location = selectedOffer?.business?.address ? {
+    address: selectedOffer.business.address,
+    lat: selectedOffer.business?.lat,
+    lng: selectedOffer.business?.lng
+  } : null;
 
   const goToPrev = () => {
     setShowMap(false); // Reset to details view when navigating

@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, Check, X, Users, Send } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { friendHouseholds, activities } from '../../data/seedData';
+import { useData } from '../../context/DataContext';
+import { activities } from '../../data/seedData';
 
 export function InviteCard({ invite, type, onRespond }) {
+  const { friendHouseholds } = useData();
   const activity = invite.activity ? activities.find(a => a.id === invite.activity.id) : invite.activity;
   const invitedFriends = friendHouseholds.filter(h =>
     invite.invitedHouseholds?.includes(h.id)
