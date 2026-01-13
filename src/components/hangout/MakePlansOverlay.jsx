@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Mic, Calendar, MapPin, Users } from 'lucide-react';
+import { X, Send, Mic, Calendar, MapPin, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
+import { DeliveryMethodSelector } from './DeliveryMethodSelector';
 import { activities, timeSlots } from '../../data/seedData';
 
 const dateOptions = [
@@ -20,6 +21,8 @@ export function MakePlansOverlay({ onClose, onSend, preselectedFriends = [] }) {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedFriends, setSelectedFriends] = useState([]);
+  const [deliveryMethods, setDeliveryMethods] = useState({});
+  const [showDeliveryOptions, setShowDeliveryOptions] = useState(false);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
 
   useEffect(() => {
@@ -39,13 +42,27 @@ export function MakePlansOverlay({ onClose, onSend, preselectedFriends = [] }) {
   // Only require friends selected - when/what are optional
   const isValid = selectedFriends.length > 0;
 
+  // Get selected friend objects for delivery selector
+  const selectedFriendObjects = useMemo(() => {
+    return selectedFriends.map(id => {
+      const household = friendHouseholds.find(h => h.id === id);
+      return {
+        id,
+        householdName: household?.householdName || '',
+        avatar: household?.members?.[0]?.avatar,
+        isAppUser: household?.isAppUser !== false // Default to true for demo
+      };
+    });
+  }, [selectedFriends, friendHouseholds]);
+
   const handleSend = () => {
     if (!isValid) return;
     onSend({
       date: selectedDate,
       timeSlot: selectedTimeSlot,
       activity: selectedActivity,
-      invitedHouseholds: selectedFriends
+      invitedHouseholds: selectedFriends,
+      deliveryMethods
     });
   };
 
@@ -217,6 +234,45 @@ export function MakePlansOverlay({ onClose, onSend, preselectedFriends = [] }) {
           })}
         </div>
       </section>
+
+      {/* Delivery Options - Collapsible */}
+      {selectedFriends.length > 0 && (
+        <section className="mb-6">
+          <button
+            onClick={() => setShowDeliveryOptions(!showDeliveryOptions)}
+            className="flex items-center justify-between w-full mb-3"
+          >
+            <div className="flex items-center gap-2">
+              <Send size={16} style={{ color: theme.textSecondary }} />
+              <h3 className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                Delivery options
+              </h3>
+            </div>
+            {showDeliveryOptions ? (
+              <ChevronUp size={16} style={{ color: theme.textSecondary }} />
+            ) : (
+              <ChevronDown size={16} style={{ color: theme.textSecondary }} />
+            )}
+          </button>
+          <AnimatePresence>
+            {showDeliveryOptions && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <DeliveryMethodSelector
+                  friends={selectedFriendObjects}
+                  selectedMethods={deliveryMethods}
+                  onMethodChange={setDeliveryMethods}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+      )}
 
       {/* Send Button - Fixed at bottom */}
       <motion.div
