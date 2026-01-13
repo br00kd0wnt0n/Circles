@@ -10,7 +10,7 @@ import { StatusDot } from '../ui/StatusDot';
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
 // Import seedData just for initial intro delays (computed at load time)
-import { friendHouseholds as seedFriends } from '../../data/seedData';
+import { friendHouseholds as seedFriends, localOffers } from '../../data/seedData';
 
 // Generate dynamic activity suggestions based on context
 const generateSuggestions = (households, weather = 'sunny') => {
