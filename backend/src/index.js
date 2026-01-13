@@ -18,6 +18,7 @@ import invitesRoutes from './routes/invites.js';
 import offersRoutes from './routes/offers.js';
 import eventsRoutes from './routes/events.js';
 import statusRoutes from './routes/status.js';
+import adminAuthRoutes from './routes/admin/auth.js';
 
 // Create Express app
 const app = express();
@@ -67,6 +68,7 @@ app.use('/api/invites', invitesRoutes);
 app.use('/api/offers', offersRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/status', statusRoutes);
+app.use('/api/admin/auth', adminAuthRoutes);
 
 // Error handling
 app.use(notFound);
