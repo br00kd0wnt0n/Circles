@@ -8,10 +8,12 @@ import { SettingsScreen } from './components/settings/SettingsScreen';
 import { WelcomeGreeting } from './components/home/WelcomeGreeting';
 import { Toast } from './components/ui/Toast';
 import { InstallPrompt } from './components/ui/InstallPrompt';
-import { useAppState } from './hooks/useLocalStorage';
 import { useTheme } from './context/ThemeContext';
 import { useToast } from './context/ToastContext';
-import { friendHouseholds } from './data/seedData';
+import { useAuth } from './context/AuthContext';
+import { useData } from './context/DataContext';
+import { useWeather } from './hooks/useWeather';
+import OnboardingFlow from './screens/OnboardingFlow';
 
 function App() {
   const [activeTab, setActiveTab] = useState('circles'); // circles is now the main view
@@ -19,11 +21,14 @@ function App() {
   const [showMakePlans, setShowMakePlans] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [preselectedFriends, setPreselectedFriends] = useState([]);
-  const [weather] = useState('sunny'); // sunny, cloudy, rainy
-  const [temperature] = useState(72); // temperature in Fahrenheit
   const [showWelcome, setShowWelcome] = useState(true);
   const [introRevealed, setIntroRevealed] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Auth state
+  const { isLoading: authLoading, isAuthenticated, needsOnboarding } = useAuth();
+
+  // Data from API or demo mode
   const {
     myHousehold,
     updateHousehold,
@@ -31,11 +36,25 @@ function App() {
     setMyStatus,
     invites,
     addInvite,
-    respondToInvite
-  } = useAppState();
+    respondToInvite,
+    friendHouseholds,
+    contacts
+  } = useData();
+
+  // Weather data
+  const { weather: weatherData } = useWeather();
+  const weather = weatherData?.condition || 'sunny';
+  const temperature = weatherData?.temperature || 72;
 
   const { theme } = useTheme();
   const { toast, showSuccess, showInvite, dismissToast } = useToast();
+
+  // Show onboarding if user requests login or needs to complete setup
+  useEffect(() => {
+    if (isAuthenticated && needsOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [isAuthenticated, needsOnboarding]);
 
   // Demo: Show a random incoming invite after intro completes
   useEffect(() => {
@@ -255,6 +274,20 @@ function App() {
 
         {/* PWA Install Prompt */}
         <InstallPrompt />
+
+        {/* Onboarding Flow Overlay */}
+        <AnimatePresence>
+          {showOnboarding && (
+            <motion.div
+              className="fixed inset-0 z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <OnboardingFlow />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
