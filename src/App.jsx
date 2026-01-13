@@ -5,6 +5,8 @@ import { UnifiedHomeCircles } from './components/home/UnifiedHomeCircles';
 import { ActivityScreen } from './components/activity/ActivityScreen';
 import { MakePlansOverlay } from './components/hangout/MakePlansOverlay';
 import { SettingsScreen } from './components/settings/SettingsScreen';
+import { ContactsScreen } from './screens/ContactsScreen';
+import { CirclesScreen } from './screens/CirclesScreen';
 import { WelcomeGreeting } from './components/home/WelcomeGreeting';
 import { Toast } from './components/ui/Toast';
 import { InstallPrompt } from './components/ui/InstallPrompt';
@@ -20,6 +22,8 @@ function App() {
   const [viewMode, setViewMode] = useState('venn'); // 'venn' or 'scattered'
   const [showMakePlans, setShowMakePlans] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showContacts, setShowContacts] = useState(false);
+  const [showCircles, setShowCircles] = useState(false);
   const [preselectedFriends, setPreselectedFriends] = useState([]);
   const [showWelcome, setShowWelcome] = useState(true);
   const [introRevealed, setIntroRevealed] = useState(false);
@@ -270,7 +274,35 @@ function App() {
           onClose={() => setShowSettings(false)}
           household={myHousehold}
           onUpdateHousehold={updateHousehold}
+          onOpenContacts={() => {
+            setShowSettings(false);
+            setShowContacts(true);
+          }}
+          onOpenCircles={() => {
+            setShowSettings(false);
+            setShowCircles(true);
+          }}
         />
+
+        {/* Contacts Screen */}
+        <AnimatePresence>
+          {showContacts && (
+            <ContactsScreen
+              isOpen={showContacts}
+              onClose={() => setShowContacts(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Circles Screen */}
+        <AnimatePresence>
+          {showCircles && (
+            <CirclesScreen
+              isOpen={showCircles}
+              onClose={() => setShowCircles(false)}
+            />
+          )}
+        </AnimatePresence>
 
         {/* PWA Install Prompt */}
         <InstallPrompt />

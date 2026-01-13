@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, User, Users, Bell, Palette, HelpCircle, LogOut } from 'lucide-react';
+import { X, ChevronRight, User, Users, Bell, Palette, HelpCircle, LogOut, Contact, CircleDot } from 'lucide-react';
 import { Button } from '../ui/Button';
 
-export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold }) {
+export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, onOpenContacts, onOpenCircles }) {
   const [editingName, setEditingName] = useState(false);
   const [householdName, setHouseholdName] = useState(household.householdName);
   const [editingMember, setEditingMember] = useState(null);
@@ -136,6 +136,35 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold }
                       <span className="text-lg">+</span>
                     </div>
                     <span className="font-medium">Add Family Member</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Manage Section */}
+              <div className="p-4">
+                <h3 className="text-sm font-medium text-[#6B7280] mb-3 uppercase tracking-wide">
+                  Manage
+                </h3>
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                  <button
+                    onClick={onOpenContacts}
+                    className="w-full p-4 flex items-center justify-between border-b border-gray-100"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Contact size={20} className="text-[#9CAF88]" />
+                      <span className="text-[#1F2937]">Contacts</span>
+                    </div>
+                    <ChevronRight size={20} className="text-[#6B7280]" />
+                  </button>
+                  <button
+                    onClick={onOpenCircles}
+                    className="w-full p-4 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <CircleDot size={20} className="text-[#9CAF88]" />
+                      <span className="text-[#1F2937]">My Circles</span>
+                    </div>
+                    <ChevronRight size={20} className="text-[#6B7280]" />
                   </button>
                 </div>
               </div>
