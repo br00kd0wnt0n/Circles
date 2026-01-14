@@ -42,7 +42,8 @@ function App() {
     addInvite,
     respondToInvite,
     friendHouseholds,
-    contacts
+    contacts,
+    requiresAuth
   } = useData();
 
   // Weather data
@@ -53,12 +54,16 @@ function App() {
   const { theme } = useTheme();
   const { toast, showSuccess, showInvite, dismissToast } = useToast();
 
-  // Show onboarding if user requests login or needs to complete setup
+  // Show onboarding if user requests login, needs to complete setup, or in production mode without auth
   useEffect(() => {
-    if (isAuthenticated && needsOnboarding) {
+    if (requiresAuth) {
+      // Production mode without auth - show onboarding immediately
+      setShowOnboarding(true);
+      setShowWelcome(false);
+    } else if (isAuthenticated && needsOnboarding) {
       setShowOnboarding(true);
     }
-  }, [isAuthenticated, needsOnboarding]);
+  }, [isAuthenticated, needsOnboarding, requiresAuth]);
 
   // Demo: Show a random incoming invite after intro completes
   useEffect(() => {

@@ -11,6 +11,10 @@ import { useSocket, useStatusUpdates, useInviteUpdates } from '../hooks/useSocke
 // Import seed data as fallback for demo mode
 import { currentHousehold as seedHousehold, friendHouseholds, circles as seedCircles } from '../data/seedData';
 
+// Check if demo mode is enabled via environment variable
+// Default to true for backwards compatibility
+const DEMO_MODE_ENABLED = import.meta.env.VITE_DEMO_MODE !== 'false';
+
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
@@ -25,12 +29,12 @@ export function DataProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Demo mode state (uses seedData when not authenticated)
-  const [demoMode, setDemoMode] = useState(!isAuthenticated);
+  // Demo mode state (uses seedData when not authenticated AND demo mode is enabled)
+  const [demoMode, setDemoMode] = useState(!isAuthenticated && DEMO_MODE_ENABLED);
   const [demoInvites, setDemoInvites] = useState([]);
 
-  // Household data (from auth context or demo)
-  const household = authHousehold || seedHousehold;
+  // Household data (from auth context or demo if enabled)
+  const household = authHousehold || (DEMO_MODE_ENABLED ? seedHousehold : null);
 
   // Status state
   const [myStatus, setMyStatusState] = useState({
@@ -47,9 +51,17 @@ export function DataProvider({ children }) {
     if (isAuthenticated) {
       setDemoMode(false);
       loadAllData();
-    } else {
+    } else if (DEMO_MODE_ENABLED) {
       setDemoMode(true);
       loadDemoData();
+    } else {
+      // Production mode without auth - show empty state
+      setDemoMode(false);
+      setIsLoading(false);
+      setContacts([]);
+      setCircles([]);
+      setInvites({ sent: [], received: [] });
+      loadPublicData(); // Still load offers/events
     }
   }, [isAuthenticated]);
 
@@ -75,8 +87,10 @@ export function DataProvider({ children }) {
     } catch (err) {
       console.error('Failed to load data:', err);
       setError(err.message);
-      // Fall back to demo mode on error
-      loadDemoData();
+      // Fall back to demo mode on error only if demo mode is enabled
+      if (DEMO_MODE_ENABLED) {
+        loadDemoData();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -256,8 +270,10 @@ export function DataProvider({ children }) {
   const refresh = useCallback(() => {
     if (isAuthenticated) {
       loadAllData();
-    } else {
+    } else if (DEMO_MODE_ENABLED) {
       loadDemoData();
+    } else {
+      loadPublicData();
     }
   }, [isAuthenticated]);
 
@@ -288,7 +304,11 @@ export function DataProvider({ children }) {
     // For compatibility with existing useAppState
     myHousehold: household,
     updateHousehold: () => {}, // TODO: implement
-    friendHouseholds: demoMode ? friendHouseholds : contacts
+    friendHouseholds: demoMode ? friendHouseholds : contacts,
+
+    // Production mode flag (no demo data)
+    isProductionMode: !DEMO_MODE_ENABLED,
+    requiresAuth: !DEMO_MODE_ENABLED && !isAuthenticated
   };
 
   return (
