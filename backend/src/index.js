@@ -24,10 +24,18 @@ import adminAuthRoutes from './routes/admin/auth.js';
 const app = express();
 const httpServer = createServer(app);
 
-// Socket.io setup
+// Socket.io setup - allow multiple origins for development
+const socketAllowedOrigins = [
+  env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173'
+].filter(Boolean);
+
 const io = new Server(httpServer, {
   cors: {
-    origin: env.FRONTEND_URL,
+    origin: socketAllowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -41,9 +49,24 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
-// CORS
+// CORS - allow multiple origins for development
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173'
+].filter(Boolean);
+
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 

@@ -32,32 +32,58 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
     return sizes;
   }, []);
 
-  // Dynamic circle positions based on sizes - adjusted for larger circles
+  // Dynamic circle positions based on number of circles and sizes
   const circleLayout = useMemo(() => {
-    return {
-      'rock-academy': {
-        cx: 32,
-        cy: 38,
-        r: circleSizes['rock-academy'],
-        labelX: 8,
-        labelY: 8
-      },
-      'woodstock-elementary': {
-        cx: 68,
-        cy: 38,
-        r: circleSizes['woodstock-elementary'],
-        labelX: 92,
-        labelY: 8
-      },
-      'nyc-friends': {
-        cx: 50,
-        cy: 70,
-        r: circleSizes['nyc-friends'],
-        labelX: 50,
-        labelY: 98
-      }
+    const layout = {};
+    const count = circles.length;
+
+    if (count === 0) return layout;
+
+    // Predefined positions for common circle counts (Venn diagram style)
+    const positions = {
+      1: [{ cx: 50, cy: 50, labelX: 50, labelY: 15 }],
+      2: [
+        { cx: 35, cy: 50, labelX: 10, labelY: 50 },
+        { cx: 65, cy: 50, labelX: 90, labelY: 50 }
+      ],
+      3: [
+        { cx: 32, cy: 38, labelX: 8, labelY: 8 },
+        { cx: 68, cy: 38, labelX: 92, labelY: 8 },
+        { cx: 50, cy: 70, labelX: 50, labelY: 98 }
+      ],
+      4: [
+        { cx: 30, cy: 30, labelX: 5, labelY: 5 },
+        { cx: 70, cy: 30, labelX: 95, labelY: 5 },
+        { cx: 30, cy: 70, labelX: 5, labelY: 95 },
+        { cx: 70, cy: 70, labelX: 95, labelY: 95 }
+      ]
     };
-  }, [circleSizes]);
+
+    // Use predefined positions if available, otherwise distribute in a circle
+    const positionSet = positions[count] || circles.map((_, i) => {
+      const angle = (i / count) * 2 * Math.PI - Math.PI / 2;
+      const radius = 25;
+      return {
+        cx: 50 + radius * Math.cos(angle),
+        cy: 50 + radius * Math.sin(angle),
+        labelX: 50 + (radius + 15) * Math.cos(angle),
+        labelY: 50 + (radius + 15) * Math.sin(angle)
+      };
+    });
+
+    circles.forEach((circle, i) => {
+      const pos = positionSet[i] || { cx: 50, cy: 50, labelX: 50, labelY: 50 };
+      layout[circle.id] = {
+        cx: pos.cx,
+        cy: pos.cy,
+        r: circleSizes[circle.id] || 35,
+        labelX: pos.labelX,
+        labelY: pos.labelY
+      };
+    });
+
+    return layout;
+  }, [circles, circleSizes]);
 
   // Group households by their zone
   const householdsByZone = useMemo(() => {
@@ -70,52 +96,67 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
     return zones;
   }, []);
 
-  // Smart positioning based on zone type and count
-  const getHouseholdPosition = (household, zoneKey, indexInZone, totalInZone) => {
-    // Define zone-specific layouts - adjusted for larger circles
-    const zoneLayouts = {
-      // Single circles - spread along the outer edge
-      'rock-academy': {
-        base: { x: 12, y: 38 },
-        direction: 'vertical',
-        spacing: 11
-      },
-      'woodstock-elementary': {
-        base: { x: 88, y: 38 },
-        direction: 'vertical',
-        spacing: 11
-      },
-      'nyc-friends': {
-        base: { x: 50, y: 90 },
-        direction: 'horizontal',
-        spacing: 14
-      },
+  // Dynamically build zone layouts based on actual circles
+  const zoneLayouts = useMemo(() => {
+    const layouts = {};
+    const count = circles.length;
 
-      // Two-circle intersections - spread along the intersection
-      'rock-academy+woodstock-elementary': {
-        base: { x: 50, y: 24 },
-        direction: 'horizontal',
-        spacing: 12
-      },
-      'nyc-friends+rock-academy': {
-        base: { x: 28, y: 62 },
-        direction: 'diagonal-left',
-        spacing: 10
-      },
-      'nyc-friends+woodstock-elementary': {
-        base: { x: 72, y: 62 },
-        direction: 'diagonal-right',
-        spacing: 10
-      },
+    if (count === 0) return layouts;
 
-      // All three (center) - just center it
-      'nyc-friends+rock-academy+woodstock-elementary': {
+    // For each circle, place households on the outer edge opposite to center
+    circles.forEach((circle, i) => {
+      const pos = circleLayout[circle.id];
+      if (!pos) return;
+
+      // Calculate outer edge position (away from center at 50,50)
+      const dx = pos.cx - 50;
+      const dy = pos.cy - 50;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      const outerX = pos.cx + (dx / dist) * 20;
+      const outerY = pos.cy + (dy / dist) * 20;
+
+      layouts[circle.id] = {
+        base: { x: Math.max(8, Math.min(92, outerX)), y: Math.max(8, Math.min(92, outerY)) },
+        direction: Math.abs(dx) > Math.abs(dy) ? 'vertical' : 'horizontal',
+        spacing: 11
+      };
+    });
+
+    // For multi-circle intersections, place at the average position
+    // Generate all possible combinations dynamically
+    const circleIds = circles.map(c => c.id);
+
+    // 2-circle intersections
+    for (let i = 0; i < circleIds.length; i++) {
+      for (let j = i + 1; j < circleIds.length; j++) {
+        const key = [circleIds[i], circleIds[j]].sort().join('+');
+        const pos1 = circleLayout[circleIds[i]];
+        const pos2 = circleLayout[circleIds[j]];
+        if (pos1 && pos2) {
+          layouts[key] = {
+            base: { x: (pos1.cx + pos2.cx) / 2, y: (pos1.cy + pos2.cy) / 2 },
+            direction: 'horizontal',
+            spacing: 12
+          };
+        }
+      }
+    }
+
+    // 3+ circle intersections (center)
+    if (circleIds.length >= 3) {
+      const allKey = [...circleIds].sort().join('+');
+      layouts[allKey] = {
         base: { x: 50, y: 50 },
         direction: 'center',
         spacing: 0
-      }
-    };
+      };
+    }
 
+    return layouts;
+  }, [circles, circleLayout]);
+
+  // Smart positioning based on zone type and count
+  const getHouseholdPosition = (household, zoneKey, indexInZone, totalInZone) => {
     const layout = zoneLayouts[zoneKey] || { base: { x: 50, y: 50 }, direction: 'center', spacing: 0 };
     const { base, direction, spacing } = layout;
 
@@ -172,39 +213,47 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
         style={{ overflow: 'visible' }}
       >
         <defs>
-          {/* Define curved paths for text to follow - longer arcs for full text */}
-          {circleLabelInfo.map(circle => {
+          {/* Define curved paths for text to follow - dynamic positioning */}
+          {circleLabelInfo.map((circle, index) => {
             const layout = circleLayout[circle.id];
-            const labelRadius = layout.r + 5; // Slightly outside the circle
+            if (!layout) return null;
 
-            // Different arc positions for each circle - extended arcs
-            if (circle.id === 'rock-academy') {
-              // Top-left arc - wider curve for full text
+            const labelRadius = (layout.r || 35) + 5;
+            const cx = layout.cx || 50;
+            const cy = layout.cy || 50;
+
+            // Determine arc direction based on position relative to center
+            const isTop = cy < 50;
+            const isLeft = cx < 50;
+            const isBottom = cy > 55;
+
+            if (isTop && isLeft) {
+              // Top-left arc
               return (
                 <path
                   key={`path-${circle.id}`}
                   id={`textPath-${circle.id}`}
-                  d={`M ${layout.cx - labelRadius} ${layout.cy - labelRadius * 0.2} A ${labelRadius} ${labelRadius} 0 0 1 ${layout.cx - labelRadius * 0.2} ${layout.cy - labelRadius}`}
+                  d={`M ${cx - labelRadius} ${cy - labelRadius * 0.2} A ${labelRadius} ${labelRadius} 0 0 1 ${cx - labelRadius * 0.2} ${cy - labelRadius}`}
                   fill="none"
                 />
               );
-            } else if (circle.id === 'woodstock-elementary') {
-              // Top-right arc - wider curve for full text
+            } else if (isTop && !isLeft) {
+              // Top-right arc
               return (
                 <path
                   key={`path-${circle.id}`}
                   id={`textPath-${circle.id}`}
-                  d={`M ${layout.cx + labelRadius * 0.2} ${layout.cy - labelRadius} A ${labelRadius} ${labelRadius} 0 0 1 ${layout.cx + labelRadius} ${layout.cy - labelRadius * 0.2}`}
+                  d={`M ${cx + labelRadius * 0.2} ${cy - labelRadius} A ${labelRadius} ${labelRadius} 0 0 1 ${cx + labelRadius} ${cy - labelRadius * 0.2}`}
                   fill="none"
                 />
               );
             } else {
-              // Bottom arc for NYC Friends - wider curve
+              // Bottom arc (default)
               return (
                 <path
                   key={`path-${circle.id}`}
                   id={`textPath-${circle.id}`}
-                  d={`M ${layout.cx - labelRadius * 0.85} ${layout.cy + labelRadius * 0.6} A ${labelRadius} ${labelRadius} 0 0 0 ${layout.cx + labelRadius * 0.85} ${layout.cy + labelRadius * 0.6}`}
+                  d={`M ${cx - labelRadius * 0.85} ${cy + labelRadius * 0.6} A ${labelRadius} ${labelRadius} 0 0 0 ${cx + labelRadius * 0.85} ${cy + labelRadius * 0.6}`}
                   fill="none"
                 />
               );
@@ -215,14 +264,16 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
         {/* Draw circles with thin strokes and transparency */}
         {circles.map((circle, index) => {
           const layout = circleLayout[circle.id];
+          if (!layout) return null;
+
           const isHighlighted = highlightedCircles.includes(circle.id);
 
           return (
             <motion.circle
               key={circle.id}
-              cx={layout.cx}
-              cy={layout.cy}
-              r={layout.r}
+              cx={layout.cx || 50}
+              cy={layout.cy || 50}
+              r={layout.r || 35}
               fill={hexToRgba(circle.color, isHighlighted ? 0.3 : 0.2)}
               stroke={circle.color}
               strokeWidth={isHighlighted ? 0.8 : 0.5}
