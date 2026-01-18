@@ -67,13 +67,13 @@ function App() {
 
   // Demo: Show a random incoming invite after intro completes
   useEffect(() => {
-    if (!showWelcome && introRevealed) {
+    if (!showWelcome && introRevealed && myHousehold) {
       const randomDelay = 8000 + Math.random() * 7000; // 8-15 seconds after intro
       const demoFriends = friendHouseholds.filter(h => h.status.state !== 'busy');
       const randomFriend = demoFriends[Math.floor(Math.random() * demoFriends.length)];
 
       const timer = setTimeout(() => {
-        if (randomFriend) {
+        if (randomFriend && myHousehold) {
           // Create a real invite
           const demoInvite = {
             id: `demo-${Date.now()}`,
@@ -132,6 +132,7 @@ function App() {
   };
 
   const handleSendInvite = (inviteData) => {
+    if (!myHousehold) return;
     addInvite({
       createdBy: myHousehold.id,
       ...inviteData
