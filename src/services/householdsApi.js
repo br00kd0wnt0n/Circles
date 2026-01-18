@@ -3,26 +3,38 @@
  */
 import api from './api';
 
+// Transform API response to frontend format
+const transformHousehold = (data) => {
+  if (!data) return data;
+  return {
+    ...data,
+    householdName: data.name || data.householdName,
+  };
+};
+
 export const householdsApi = {
   /**
    * Get current user's household
    */
   async getMyHousehold() {
-    return api.get('/api/households/me');
+    const data = await api.get('/api/households/me');
+    return transformHousehold(data);
   },
 
   /**
    * Create a new household
    */
   async create(data) {
-    return api.post('/api/households', data);
+    const result = await api.post('/api/households', data);
+    return transformHousehold(result);
   },
 
   /**
    * Update current household
    */
   async update(data) {
-    return api.put('/api/households/me', data);
+    const result = await api.put('/api/households/me', data);
+    return transformHousehold(result);
   },
 
   /**

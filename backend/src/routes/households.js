@@ -9,6 +9,7 @@ const router = Router();
 // Validation schemas
 const createHouseholdSchema = z.object({
   name: z.string().min(1).max(100),
+  zipCode: z.string().max(10).optional(),
   members: z.array(z.object({
     name: z.string().min(1).max(100),
     role: z.enum(['adult', 'child', 'pet']).optional(),
@@ -17,7 +18,8 @@ const createHouseholdSchema = z.object({
 });
 
 const updateHouseholdSchema = z.object({
-  name: z.string().min(1).max(100).optional()
+  name: z.string().min(1).max(100).optional(),
+  zipCode: z.string().max(10).optional()
 });
 
 const addMemberSchema = z.object({
@@ -31,7 +33,7 @@ const addMemberSchema = z.object({
  * Create a new household (during onboarding)
  */
 router.post('/', authenticate, asyncHandler(async (req, res) => {
-  const { name, members = [] } = createHouseholdSchema.parse(req.body);
+  const { name, zipCode, members = [] } = createHouseholdSchema.parse(req.body);
 
   // Check if user already has a household
   const existing = await db('household_members')
@@ -46,6 +48,7 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
   const [household] = await db('households')
     .insert({
       name,
+      zip_code: zipCode,
       status_state: 'available'
     })
     .returning('*');
@@ -81,6 +84,7 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
   res.status(201).json({
     id: household.id,
     name: household.name,
+    zipCode: household.zip_code,
     status: {
       state: household.status_state,
       note: household.status_note,
@@ -106,6 +110,7 @@ router.get('/me', authenticate, asyncHandler(async (req, res) => {
   res.json({
     id: req.household.id,
     name: req.household.name,
+    zipCode: req.household.zip_code,
     status: {
       state: req.household.status_state,
       note: req.household.status_note,
@@ -124,14 +129,15 @@ router.put('/me', authenticate, asyncHandler(async (req, res) => {
     throw new AppError('No household found', 404);
   }
 
-  const data = updateHouseholdSchema.parse(req.body);
+  const { name, zipCode } = updateHouseholdSchema.parse(req.body);
+
+  const updateData = { updated_at: new Date() };
+  if (name !== undefined) updateData.name = name;
+  if (zipCode !== undefined) updateData.zip_code = zipCode;
 
   const [updated] = await db('households')
     .where({ id: req.household.id })
-    .update({
-      ...data,
-      updated_at: new Date()
-    })
+    .update(updateData)
     .returning('*');
 
   const members = await db('household_members')
@@ -141,6 +147,7 @@ router.put('/me', authenticate, asyncHandler(async (req, res) => {
   res.json({
     id: updated.id,
     name: updated.name,
+    zipCode: updated.zip_code,
     status: {
       state: updated.status_state,
       note: updated.status_note,

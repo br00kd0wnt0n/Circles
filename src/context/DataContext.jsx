@@ -78,13 +78,16 @@ export function DataProvider({ children }) {
     setIsLoading(true);
     setError(null);
 
+    // Get zipCode from household for location-based filtering
+    const zipCode = authHousehold?.zipCode;
+
     try {
       const [contactsData, circlesData, invitesData, offersData, eventsData] = await Promise.all([
         contactsApi.getAll(),
         circlesApi.getAll(),
         invitesApi.getAll(),
-        offersApi.getAll(),
-        eventsApi.getAll()
+        offersApi.getAll({ zipCode }),
+        eventsApi.getAll({ zipCode })
       ]);
 
       setContacts(contactsData);

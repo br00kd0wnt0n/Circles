@@ -212,7 +212,10 @@ function App() {
               setMyStatus={setMyStatus}
               onCreateHangout={handleMakePlans}
               onOpenSettings={() => setShowSettings(true)}
+              onOpenContacts={() => setShowContacts(true)}
               introRevealed={introRevealed || !showWelcome}
+              weather={weather}
+              temperature={temperature}
             />
           </motion.div>
 

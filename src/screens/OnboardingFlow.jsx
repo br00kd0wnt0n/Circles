@@ -20,6 +20,7 @@ export default function OnboardingFlow() {
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [householdName, setHouseholdName] = useState('');
+  const [zipCode, setZipCode] = useState('');
   const [members, setMembers] = useState([
     { name: '', role: 'adult', avatar: '👨' }
   ]);
@@ -101,6 +102,7 @@ export default function OnboardingFlow() {
     try {
       await createHousehold({
         name: householdName.trim(),
+        zipCode: zipCode.trim() || undefined,
         members: validMembers
       });
       setStep(STEPS.COMPLETE);
@@ -109,7 +111,7 @@ export default function OnboardingFlow() {
     } finally {
       setIsLoading(false);
     }
-  }, [householdName, members, createHousehold]);
+  }, [householdName, zipCode, members, createHousehold]);
 
   // Render steps
   if (step === STEPS.COMPLETE) {
@@ -216,8 +218,21 @@ export default function OnboardingFlow() {
               onChange={(e) => setHouseholdName(e.target.value)}
               placeholder="e.g., The Smiths"
               className="w-full px-4 py-3 bg-white/10 rounded-xl border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-white/40"
-              onKeyDown={(e) => e.key === 'Enter' && handleHouseholdNext()}
             />
+
+            <div>
+              <label className="block text-sm text-white/70 mb-2">Zip code (for local offers & events)</label>
+              <input
+                type="text"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                placeholder="e.g., 12345"
+                className="w-full px-4 py-3 bg-white/10 rounded-xl border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-white/40"
+                inputMode="numeric"
+                maxLength={5}
+                onKeyDown={(e) => e.key === 'Enter' && handleHouseholdNext()}
+              />
+            </div>
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
 

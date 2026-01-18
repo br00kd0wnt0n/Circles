@@ -6,9 +6,14 @@ import api from './api';
 export const eventsApi = {
   /**
    * Get upcoming events
+   * @param {Object} options
+   * @param {string} options.zipCode - Optional zip code for location filtering
    */
-  async getAll() {
-    return api.get('/api/events');
+  async getAll(options = {}) {
+    const params = new URLSearchParams();
+    if (options.zipCode) params.append('zipCode', options.zipCode);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return api.get(`/api/events${query}`);
   },
 
   /**

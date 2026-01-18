@@ -147,7 +147,10 @@ export function UnifiedHomeCircles({
   setMyStatus,
   onCreateHangout,
   onOpenSettings,
-  introRevealed = true // Controls intro animation
+  onOpenContacts,
+  introRevealed = true, // Controls intro animation
+  weather = 'sunny',
+  temperature = 72
 }) {
   const { theme } = useTheme();
   const { friendHouseholds, circles, offers, demoMode } = useData();
@@ -179,8 +182,8 @@ export function UnifiedHomeCircles({
 
   // Generate dynamic suggestions based on available friends and weather
   const activitySuggestions = useMemo(() => {
-    return generateSuggestions(liveHouseholds, offers, 'sunny');
-  }, [liveHouseholds, offers]);
+    return generateSuggestions(liveHouseholds, offers, weather);
+  }, [liveHouseholds, offers, weather]);
 
   // Auto-cycle activity suggestions (slower pace)
   useEffect(() => {
@@ -287,7 +290,8 @@ export function UnifiedHomeCircles({
         />
       </motion.div>
 
-      {/* Info Bar - fades in */}
+      {/* Info Bar - fades in, only show when there are friends */}
+      {liveHouseholds.length > 0 && (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: introRevealed ? 1 : 0 }}
@@ -297,8 +301,8 @@ export function UnifiedHomeCircles({
         {/* Weather + Cycling Suggestion */}
         <div className="flex items-center gap-2">
           <div className="text-sm" style={{ color: theme.textSecondary }}>
-            <span className="font-medium">72°</span>
-            <div className="text-xs">Sunny</div>
+            <span className="font-medium">{temperature}°</span>
+            <div className="text-xs capitalize">{weather}</div>
           </div>
           {activitySuggestions.length > 0 && (
             <>
@@ -328,13 +332,41 @@ export function UnifiedHomeCircles({
           <div className="text-xs">Friends Available</div>
         </div>
       </motion.div>
+      )}
 
       {/* Contacts area with circle outlines */}
       <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-visible px-4 -mt-4">
         <div className="relative w-full aspect-square max-w-[340px] max-h-[85%]">
-          {/* Circle outlines - only show in circles view */}
+          {/* Empty State - No Friends */}
+          {liveHouseholds.length === 0 && introRevealed && (
+            <motion.div
+              className="absolute inset-0 flex flex-col items-center justify-center text-center px-8"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            >
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: `${theme.primary}20` }}>
+                <span className="text-4xl">+</span>
+              </div>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: theme.text }}>
+                Add your first friends
+              </h3>
+              <p className="text-sm mb-6" style={{ color: theme.textSecondary }}>
+                Connect with friends and family to see when they're available to hang out
+              </p>
+              <button
+                onClick={onOpenContacts}
+                className="px-6 py-3 rounded-xl font-medium text-white transition-colors"
+                style={{ backgroundColor: theme.primary }}
+              >
+                Add Friends
+              </button>
+            </motion.div>
+          )}
+
+          {/* Circle outlines - only show in circles view when there are friends */}
           <AnimatePresence>
-            {isVennView && introRevealed && (
+            {isVennView && introRevealed && liveHouseholds.length > 0 && (
               <motion.svg
                 viewBox="-15 -15 130 130"
                 className="absolute inset-0 w-full h-full pointer-events-none"
