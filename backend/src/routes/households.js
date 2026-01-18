@@ -11,7 +11,7 @@ const createHouseholdSchema = z.object({
   name: z.string().min(1).max(100),
   members: z.array(z.object({
     name: z.string().min(1).max(100),
-    role: z.enum(['parent', 'child', 'pet', 'other']).optional(),
+    role: z.enum(['adult', 'child', 'pet']).optional(),
     avatar: z.string().max(10).optional()
   })).optional()
 });
@@ -22,7 +22,7 @@ const updateHouseholdSchema = z.object({
 
 const addMemberSchema = z.object({
   name: z.string().min(1).max(100),
-  role: z.enum(['parent', 'child', 'pet', 'other']).optional(),
+  role: z.enum(['adult', 'child', 'pet']).optional(),
   avatar: z.string().max(10).optional()
 });
 
