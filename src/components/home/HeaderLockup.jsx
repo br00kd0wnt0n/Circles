@@ -12,11 +12,11 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
     { id: 'busy', label: 'Busy', color: theme.headerBusy }
   ];
   const [isEditingNote, setIsEditingNote] = useState(false);
-  const [noteText, setNoteText] = useState(status.note || '');
+  const [noteText, setNoteText] = useState(status?.note || '');
 
   useEffect(() => {
-    setNoteText(status.note || '');
-  }, [status.note]);
+    setNoteText(status?.note || '');
+  }, [status?.note]);
 
   const handleNoteSave = () => {
     onStatusChange({ ...status, note: noteText.trim() || null });
@@ -37,9 +37,9 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
   };
 
   // Get current status color
-  const currentStatus = statusOptions.find(s => s.id === status.state) || statusOptions[0];
-  const hasNote = !!status.note;
-  const isAvailable = status.state !== 'busy';
+  const currentStatus = statusOptions.find(s => s.id === status?.state) || statusOptions[0];
+  const hasNote = !!status?.note;
+  const isAvailable = status?.state !== 'busy';
 
   return (
     <div className="relative mb-4 overflow-visible">
@@ -126,13 +126,13 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          {household.householdName}
+          {household?.householdName}
         </motion.h1>
 
         {/* Status Toggle Buttons */}
         <div className="flex justify-center gap-1 mb-2">
           {statusOptions.map((option) => {
-            const isActive = status.state === option.id;
+            const isActive = status?.state === option.id;
             return (
               <motion.button
                 key={option.id}
@@ -176,7 +176,7 @@ export function HeaderLockup({ household, status, onStatusChange, onOpenSettings
               className="flex items-center justify-center gap-1.5 mx-auto hover:opacity-80 transition-opacity group"
             >
               <p className="text-sm text-green-900/70">
-                {status.note || getDefaultNote()}
+                {status?.note || getDefaultNote()}
               </p>
               <Pencil size={12} className="text-green-900/40 group-hover:text-green-900/60" />
             </button>
