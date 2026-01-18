@@ -63,6 +63,9 @@ function App() {
       setShowWelcome(false);
     } else if (isAuthenticated && needsOnboarding) {
       setShowOnboarding(true);
+    } else if (isAuthenticated && !needsOnboarding) {
+      // User completed onboarding - close it and show welcome
+      setShowOnboarding(false);
     }
   }, [isAuthenticated, needsOnboarding, requiresAuth]);
 
