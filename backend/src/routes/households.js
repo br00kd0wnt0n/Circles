@@ -55,7 +55,7 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
     household_id: household.id,
     user_id: req.user.id,
     name: req.user.display_name || name.replace('The ', '').replace('s', ''),
-    role: 'parent',
+    role: 'adult',
     is_primary: true
   };
 
@@ -66,7 +66,7 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
     const additionalMembers = members.map(m => ({
       household_id: household.id,
       name: m.name,
-      role: m.role || 'other',
+      role: m.role || 'adult',
       avatar: m.avatar,
       is_primary: false
     }));
@@ -165,7 +165,7 @@ router.post('/me/members', authenticate, asyncHandler(async (req, res) => {
     .insert({
       household_id: req.household.id,
       name: data.name,
-      role: data.role || 'other',
+      role: data.role || 'adult',
       avatar: data.avatar,
       is_primary: false
     })
