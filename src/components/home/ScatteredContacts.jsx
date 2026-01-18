@@ -30,6 +30,7 @@ const generatePositions = (count) => {
 
 // Get short display name (remove "The " prefix and trailing "s")
 const getShortName = (householdName) => {
+  if (!householdName) return '';
   return householdName
     .replace(/^The\s+/i, '')
     .replace(/s$/i, '');

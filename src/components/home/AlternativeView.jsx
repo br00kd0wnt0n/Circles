@@ -188,7 +188,7 @@ function GridItem({ household, isSelected, onSelect, isDark }) {
       <p className={`text-xs mt-1 truncate w-full text-center ${
         isDark ? 'text-white' : 'text-gray-900'
       }`}>
-        {household.householdName.replace(/^The\s+/i, '')}
+        {household.householdName?.replace(/^The\s+/i, '') || ''}
       </p>
     </motion.button>
   );

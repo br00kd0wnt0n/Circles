@@ -106,7 +106,7 @@ export function InviteCard({ invite, type, onRespond }) {
             </div>
             <div className="flex-1">
               <p className="text-sm text-[#1F2937]">
-                {invitedFriends.map(f => f.householdName.replace('The ', '')).join(', ')}
+                {invitedFriends.map(f => f.householdName?.replace('The ', '') || '').join(', ')}
               </p>
               <p className="text-xs text-[#6B7280]">
                 {acceptedCount > 0 && `${acceptedCount} accepted`}

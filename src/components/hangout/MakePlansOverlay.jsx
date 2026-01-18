@@ -227,7 +227,7 @@ export function MakePlansOverlay({ onClose, onSend, preselectedFriends = [] }) {
                   {household.members[0]?.avatar || '👤'}
                 </div>
                 <p className="text-xs font-medium truncate" style={{ color: theme.textPrimary }}>
-                  {household.householdName.replace(/^The\s+/i, '')}
+                  {household.householdName?.replace(/^The\s+/i, '') || ''}
                 </p>
               </motion.button>
             );
