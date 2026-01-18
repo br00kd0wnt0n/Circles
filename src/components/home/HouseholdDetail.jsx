@@ -3,7 +3,7 @@ import { X, MessageCircle, Calendar, Users } from 'lucide-react';
 import { StatusDot } from '../ui/StatusDot';
 import { CircleBadge } from '../ui/CircleBadge';
 import { Button } from '../ui/Button';
-import { circles } from '../../data/seedData';
+import { useData } from '../../context/DataContext';
 
 const statusLabels = {
   available: 'Available',
@@ -12,9 +12,11 @@ const statusLabels = {
 };
 
 export function HouseholdDetail({ household, isOpen, onClose, onInvite }) {
+  const { circles } = useData();
+
   if (!household) return null;
 
-  const householdCircles = circles.filter(c => household.circleIds?.includes(c.id));
+  const householdCircles = (circles || []).filter(c => household.circleIds?.includes(c.id));
 
   return (
     <AnimatePresence>

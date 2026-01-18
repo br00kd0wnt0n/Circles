@@ -43,7 +43,8 @@ function App() {
     respondToInvite,
     friendHouseholds,
     contacts,
-    requiresAuth
+    requiresAuth,
+    demoMode
   } = useData();
 
   // Weather data
@@ -65,16 +66,19 @@ function App() {
     }
   }, [isAuthenticated, needsOnboarding, requiresAuth]);
 
-  // Demo: Show a random incoming invite after intro completes
+  // Demo: Show a random incoming invite after intro completes (ONLY in demo mode)
   useEffect(() => {
+    // Only create demo invites in demo mode
+    if (!demoMode) return;
+
     if (!showWelcome && introRevealed && myHousehold) {
       const randomDelay = 8000 + Math.random() * 7000; // 8-15 seconds after intro
-      const demoFriends = friendHouseholds.filter(h => h.status.state !== 'busy');
+      const demoFriends = (friendHouseholds || []).filter(h => h.status?.state !== 'busy');
       const randomFriend = demoFriends[Math.floor(Math.random() * demoFriends.length)];
 
       const timer = setTimeout(() => {
         if (randomFriend && myHousehold) {
-          // Create a real invite
+          // Create a demo invite
           const demoInvite = {
             id: `demo-${Date.now()}`,
             createdBy: randomFriend.id,
@@ -98,7 +102,7 @@ function App() {
 
       return () => clearTimeout(timer);
     }
-  }, [showWelcome, introRevealed]);
+  }, [showWelcome, introRevealed, demoMode]);
 
   const isActivityView = activeTab === 'activity';
   const isMakePlansView = showMakePlans;

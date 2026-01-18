@@ -9,16 +9,14 @@ import { MessageComposer } from '../messaging/MessageComposer';
 import { StatusDot } from '../ui/StatusDot';
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
-// Import seedData just for initial intro delays (computed at load time)
-import { friendHouseholds as seedFriends, localOffers } from '../../data/seedData';
 
 // Generate dynamic activity suggestions based on context
-const generateSuggestions = (households, weather = 'sunny') => {
-  const available = households.filter(h => h.status.state === 'available' || h.status.state === 'open');
+const generateSuggestions = (households, offers = [], weather = 'sunny') => {
+  const available = households.filter(h => h.status?.state === 'available' || h.status?.state === 'open');
   const suggestions = [];
 
   // Get short name for suggestions
-  const getShortName = (name) => name.replace(/^The\s+/i, '');
+  const getShortName = (name) => name?.replace(/^The\s+/i, '') || '';
 
   // Weather-based activities
   const weatherActivities = {
@@ -51,13 +49,13 @@ const generateSuggestions = (households, weather = 'sunny') => {
     });
   });
 
-  // Add local offer suggestions
-  localOffers.slice(0, 2).forEach(offer => {
+  // Add local offer suggestions from API data
+  (offers || []).slice(0, 2).forEach(offer => {
     if (available.length > 0) {
       const randomFriend = available[Math.floor(Math.random() * available.length)];
       suggestions.push({
-        emoji: offer.icon,
-        text: `${offer.business} with ${getShortName(randomFriend.householdName)}?`
+        emoji: offer.icon || '🏪',
+        text: `${offer.business?.name || offer.title || 'Local spot'} with ${getShortName(randomFriend.householdName)}?`
       });
     }
   });
@@ -139,14 +137,8 @@ const circlePositions = {
 // Get short display name
 const getShortName = (householdName) => {
   // Remove "The " prefix, keep everything else
-  return householdName.replace(/^The\s+/i, '');
+  return householdName?.replace(/^The\s+/i, '') || '';
 };
-
-// Generate random intro delays for each household (memoized outside component)
-const introDelays = {};
-seedFriends.forEach((h, i) => {
-  introDelays[h.id] = Math.random() * 0.4; // Random delay between 0 and 0.4s
-});
 
 export function UnifiedHomeCircles({
   viewMode, // 'venn' or 'scattered'
@@ -158,7 +150,7 @@ export function UnifiedHomeCircles({
   introRevealed = true // Controls intro animation
 }) {
   const { theme } = useTheme();
-  const { friendHouseholds, circles, offers } = useData();
+  const { friendHouseholds, circles, offers, demoMode } = useData();
   const [selectedHousehold, setSelectedHousehold] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [showStatusEditor, setShowStatusEditor] = useState(false);
@@ -169,6 +161,15 @@ export function UnifiedHomeCircles({
   // Live households from context (updates via socket)
   const [liveHouseholds, setLiveHouseholds] = useState(friendHouseholds);
 
+  // Generate intro delays dynamically based on actual households
+  const introDelays = useMemo(() => {
+    const delays = {};
+    (friendHouseholds || []).forEach((h) => {
+      delays[h.id] = Math.random() * 0.4; // Random delay between 0 and 0.4s
+    });
+    return delays;
+  }, [friendHouseholds]);
+
   // Sync with context when friendHouseholds changes
   useEffect(() => {
     if (friendHouseholds?.length > 0) {
@@ -178,8 +179,8 @@ export function UnifiedHomeCircles({
 
   // Generate dynamic suggestions based on available friends and weather
   const activitySuggestions = useMemo(() => {
-    return generateSuggestions(liveHouseholds, 'sunny');
-  }, [liveHouseholds]);
+    return generateSuggestions(liveHouseholds, offers, 'sunny');
+  }, [liveHouseholds, offers]);
 
   // Auto-cycle activity suggestions (slower pace)
   useEffect(() => {
@@ -190,10 +191,14 @@ export function UnifiedHomeCircles({
     return () => clearInterval(interval);
   }, [activitySuggestions.length]);
 
-  // Simulate random status updates (demo mode)
+  // Simulate random status updates (ONLY in demo mode)
   useEffect(() => {
+    // Only run status simulation in demo mode
+    if (!demoMode) return;
+
     const simulateUpdate = () => {
       setLiveHouseholds(prev => {
+        if (!prev || prev.length === 0) return prev;
         const newHouseholds = [...prev];
         const randomIndex = Math.floor(Math.random() * newHouseholds.length);
         const household = { ...newHouseholds[randomIndex] };
@@ -204,7 +209,7 @@ export function UnifiedHomeCircles({
         if (updateType < 0.6) {
           // 60% chance: change status
           const statuses = ['available', 'open', 'busy'];
-          const currentIndex = statuses.indexOf(household.status.state);
+          const currentIndex = statuses.indexOf(household.status?.state);
           // Bias towards adjacent statuses for more realistic transitions
           const direction = Math.random() < 0.5 ? 1 : -1;
           const newIndex = Math.max(0, Math.min(2, currentIndex + direction));
@@ -229,7 +234,7 @@ export function UnifiedHomeCircles({
     // Update every 20 seconds
     const interval = setInterval(simulateUpdate, 20000);
     return () => clearInterval(interval);
-  }, []);
+  }, [demoMode]);
 
   // Status colors from theme
   const statusColors = {
