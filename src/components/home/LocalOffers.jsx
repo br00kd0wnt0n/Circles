@@ -19,23 +19,24 @@ export function LocalOffers() {
       // Transform API offers to match expected format
       return offers.slice(0, 4).map(o => ({
         id: o.id,
-        title: o.title,
-        subtitle: o.business?.name || '',
+        offer: o.title,
+        business: o.business?.name || 'Local Business',
+        logo: o.business?.logo || o.imageUrl || '/placeholder-business.png',
         description: o.description,
         color: o.color || '#9CAF88',
         tag: o.promoCode ? `Code: ${o.promoCode}` : 'Special Offer',
-        validUntil: o.validUntil,
-        business: o.business
+        validUntil: o.validUntil ? `Valid until ${new Date(o.validUntil).toLocaleDateString()}` : 'Limited time offer',
+        businessData: o.business // Keep full business object for location data
       }));
     }
     return seedOffers.slice(0, 4);
   }, [offers]);
   const selectedOffer = selectedIndex !== null ? displayOffers[selectedIndex] : null;
-  // Get location from business or offer data
-  const location = selectedOffer?.business?.address ? {
-    address: selectedOffer.business.address,
-    lat: selectedOffer.business?.lat,
-    lng: selectedOffer.business?.lng
+  // Get location from business data
+  const location = selectedOffer?.businessData?.address ? {
+    address: selectedOffer.businessData.address,
+    lat: selectedOffer.businessData?.lat,
+    lng: selectedOffer.businessData?.lng
   } : null;
 
   const goToPrev = () => {
@@ -91,11 +92,12 @@ export function LocalOffers() {
                 borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
               }}
             >
-              <img
-                src={offer.logo}
-                alt={offer.business}
-                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-              />
+              <div
+                className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs"
+                style={{ backgroundColor: offer.color || '#9CAF88', color: 'white' }}
+              >
+                {offer.business?.charAt(0) || '?'}
+              </div>
               <span className="text-xs font-medium pr-1" style={{ color: theme.textPrimary }}>
                 {offer.offer}
               </span>
