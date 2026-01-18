@@ -18,7 +18,7 @@ const DEMO_MODE_ENABLED = import.meta.env.VITE_DEMO_MODE !== 'false';
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
-  const { isAuthenticated, household: authHousehold } = useAuth();
+  const { isAuthenticated, household: authHousehold, needsOnboarding } = useAuth();
 
   // Core data state
   const [contacts, setContacts] = useState([]);
@@ -48,9 +48,17 @@ export function DataProvider({ children }) {
 
   // Load data on mount or auth change
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !needsOnboarding && authHousehold) {
+      // User is authenticated and has a household - load real data
       setDemoMode(false);
       loadAllData();
+    } else if (isAuthenticated && needsOnboarding) {
+      // User is authenticated but needs to create household - show empty state
+      setDemoMode(false);
+      setIsLoading(false);
+      setContacts([]);
+      setCircles([]);
+      setInvites({ sent: [], received: [] });
     } else if (DEMO_MODE_ENABLED) {
       setDemoMode(true);
       loadDemoData();
@@ -63,7 +71,7 @@ export function DataProvider({ children }) {
       setInvites({ sent: [], received: [] });
       loadPublicData(); // Still load offers/events
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, needsOnboarding, authHousehold]);
 
   // Load all data from API
   const loadAllData = async () => {

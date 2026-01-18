@@ -21,7 +21,7 @@ export default function OnboardingFlow() {
   const [otpCode, setOtpCode] = useState('');
   const [householdName, setHouseholdName] = useState('');
   const [members, setMembers] = useState([
-    { name: '', role: 'adult', avatar: '👨' }
+    { name: '', role: 'parent', avatar: '👨' }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -77,7 +77,7 @@ export default function OnboardingFlow() {
 
   // Members step
   const handleAddMember = useCallback(() => {
-    setMembers(prev => [...prev, { name: '', role: 'adult', avatar: '👨' }]);
+    setMembers(prev => [...prev, { name: '', role: 'parent', avatar: '👨' }]);
   }, []);
 
   const handleRemoveMember = useCallback((index) => {
