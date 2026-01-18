@@ -11,7 +11,7 @@ const CIRCLE_COLORS = [
 
 export function CirclesScreen({ isOpen, onClose }) {
   const { theme, themeId } = useTheme();
-  const { circles, friendHouseholds, contacts } = useData();
+  const { circles, friendHouseholds, contacts, addCircle } = useData();
   const isDark = themeId === 'midnight';
 
   const [showCreateCircle, setShowCreateCircle] = useState(false);
@@ -21,8 +21,10 @@ export function CirclesScreen({ isOpen, onClose }) {
   // Calculate member counts for each circle
   const circleStats = useMemo(() => {
     const stats = {};
-    circles.forEach(circle => {
-      const members = friendHouseholds.filter(h => h.circleIds?.includes(circle.id));
+    const safeCircles = circles || [];
+    const safeHouseholds = friendHouseholds || [];
+    safeCircles.forEach(circle => {
+      const members = safeHouseholds.filter(h => h.circleIds?.includes(circle.id));
       const available = members.filter(m => m.status?.state !== 'busy').length;
       stats[circle.id] = { total: members.length, available };
     });
@@ -154,7 +156,8 @@ export function CirclesScreen({ isOpen, onClose }) {
           <CreateCircleModal
             onClose={() => setShowCreateCircle(false)}
             isDark={isDark}
-            existingColors={circles.map(c => c.color)}
+            existingColors={(circles || []).map(c => c.color)}
+            onAddCircle={addCircle}
           />
         )}
       </AnimatePresence>
@@ -192,17 +195,24 @@ export function CirclesScreen({ isOpen, onClose }) {
   );
 }
 
-function CreateCircleModal({ onClose, isDark, existingColors }) {
+function CreateCircleModal({ onClose, isDark, existingColors, onAddCircle }) {
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(
     CIRCLE_COLORS.find(c => !existingColors.includes(c)) || CIRCLE_COLORS[0]
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) return;
-    // TODO: Call API to create circle
-    console.log('Create circle:', { name, color: selectedColor });
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await onAddCircle({ name: name.trim(), color: selectedColor });
+      onClose();
+    } catch (err) {
+      console.error('Failed to create circle:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -273,10 +283,10 @@ function CreateCircleModal({ onClose, isDark, existingColors }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!name.trim()}
+            disabled={!name.trim() || isSubmitting}
             className="flex-1 py-2 rounded-lg bg-[#9CAF88] text-white disabled:opacity-50"
           >
-            Create
+            {isSubmitting ? 'Creating...' : 'Create'}
           </button>
         </div>
       </motion.div>
@@ -285,7 +295,7 @@ function CreateCircleModal({ onClose, isDark, existingColors }) {
 }
 
 function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds, contacts }) {
-  const members = friendHouseholds.filter(h => h.circleIds?.includes(circle.id));
+  const members = (friendHouseholds || []).filter(h => h.circleIds?.includes(circle.id));
 
   return (
     <motion.div
@@ -398,10 +408,11 @@ function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds, 
 }
 
 function EditCircleModal({ circle, onClose, isDark, friendHouseholds, contacts }) {
+  const safeHouseholds = friendHouseholds || [];
   const [name, setName] = useState(circle.name);
   const [selectedColor, setSelectedColor] = useState(circle.color);
   const [selectedMembers, setSelectedMembers] = useState(
-    friendHouseholds.filter(h => h.circleIds?.includes(circle.id)).map(h => h.id)
+    safeHouseholds.filter(h => h.circleIds?.includes(circle.id)).map(h => h.id)
   );
 
   const toggleMember = (memberId) => {
@@ -488,7 +499,7 @@ function EditCircleModal({ circle, onClose, isDark, friendHouseholds, contacts }
               Members ({selectedMembers.length})
             </label>
             <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-              {friendHouseholds.map(household => {
+              {safeHouseholds.map(household => {
                 const isSelected = selectedMembers.includes(household.id);
                 return (
                   <button

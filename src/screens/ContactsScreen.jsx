@@ -7,7 +7,7 @@ import { StatusDot } from '../components/ui/StatusDot';
 
 export function ContactsScreen({ isOpen, onClose }) {
   const { theme, themeId } = useTheme();
-  const { contacts, friendHouseholds, circles } = useData();
+  const { contacts, friendHouseholds, circles, addContact } = useData();
   const isDark = themeId === 'midnight';
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -250,6 +250,7 @@ export function ContactsScreen({ isOpen, onClose }) {
           <AddContactModal
             onClose={() => setShowAddContact(false)}
             isDark={isDark}
+            onAddContact={addContact}
           />
         )}
       </AnimatePresence>
@@ -269,14 +270,22 @@ export function ContactsScreen({ isOpen, onClose }) {
   );
 }
 
-function AddContactModal({ onClose, isDark }) {
+function AddContactModal({ onClose, isDark, onAddContact }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    // TODO: Call API to add contact
-    console.log('Add contact:', { name, phone });
-    onClose();
+  const handleSubmit = async () => {
+    if (!name.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await onAddContact({ name: name.trim(), phone: phone.trim() || undefined });
+      onClose();
+    } catch (err) {
+      console.error('Failed to add contact:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -346,10 +355,10 @@ function AddContactModal({ onClose, isDark }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!name}
+            disabled={!name.trim() || isSubmitting}
             className="flex-1 py-2 rounded-lg bg-[#9CAF88] text-white disabled:opacity-50"
           >
-            Add
+            {isSubmitting ? 'Adding...' : 'Add'}
           </button>
         </div>
       </motion.div>

@@ -277,6 +277,57 @@ export function DataProvider({ children }) {
     }
   }, [demoMode]);
 
+  // Add a contact
+  const addContact = useCallback(async (contactData) => {
+    if (demoMode) {
+      const newContact = {
+        id: `demo-${Date.now()}`,
+        displayName: contactData.name || contactData.displayName,
+        avatar: '👤',
+        isAppUser: false,
+        status: null,
+        circles: []
+      };
+      setContacts(prev => [...prev, newContact]);
+      return newContact;
+    }
+
+    try {
+      const created = await contactsApi.create({
+        displayName: contactData.name || contactData.displayName,
+        phone: contactData.phone || undefined
+      });
+      setContacts(prev => [...prev, { ...created, circles: [] }]);
+      return created;
+    } catch (err) {
+      console.error('Failed to create contact:', err);
+      throw err;
+    }
+  }, [demoMode]);
+
+  // Add a circle
+  const addCircle = useCallback(async (circleData) => {
+    if (demoMode) {
+      const newCircle = {
+        id: `demo-${Date.now()}`,
+        name: circleData.name,
+        color: circleData.color || '#9CAF88',
+        memberCount: 0
+      };
+      setCircles(prev => [...prev, newCircle]);
+      return newCircle;
+    }
+
+    try {
+      const created = await circlesApi.create(circleData);
+      setCircles(prev => [...prev, created]);
+      return created;
+    } catch (err) {
+      console.error('Failed to create circle:', err);
+      throw err;
+    }
+  }, [demoMode]);
+
   // Refresh data
   const refresh = useCallback(() => {
     if (isAuthenticated) {
@@ -310,12 +361,14 @@ export function DataProvider({ children }) {
     setMyStatus,
     addInvite,
     respondToInvite,
+    addContact,
+    addCircle,
     refresh,
 
     // For compatibility with existing useAppState
     myHousehold: household,
     updateHousehold: () => {}, // TODO: implement
-    friendHouseholds: demoMode ? friendHouseholds : contacts,
+    friendHouseholds: demoMode ? (friendHouseholds || []) : (contacts || []),
 
     // Production mode flag (no demo data)
     isProductionMode: !DEMO_MODE_ENABLED,
