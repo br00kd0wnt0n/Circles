@@ -45,13 +45,16 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
   }
 
   // Create household
-  // NOTE: zip_code column requires migration 014_household_zip_code.js
-  // Temporarily disabled until migration is run on production
+  const insertData = {
+    name,
+    status_state: 'available'
+  };
+  if (zipCode) {
+    insertData.zip_code = zipCode;
+  }
+
   const [household] = await db('households')
-    .insert({
-      name,
-      status_state: 'available'
-    })
+    .insert(insertData)
     .returning('*');
 
   // Add user as primary member
@@ -134,11 +137,11 @@ router.put('/me', authenticate, asyncHandler(async (req, res) => {
     throw new AppError('No household found', 404);
   }
 
-  const { name } = updateHouseholdSchema.parse(req.body);
+  const { name, zipCode } = updateHouseholdSchema.parse(req.body);
 
   const updateData = { updated_at: new Date() };
   if (name !== undefined) updateData.name = name;
-  // NOTE: zip_code update disabled until migration is run
+  if (zipCode !== undefined) updateData.zip_code = zipCode;
 
   const [updated] = await db('households')
     .where({ id: req.household.id })

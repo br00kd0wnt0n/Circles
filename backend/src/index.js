@@ -19,6 +19,9 @@ import offersRoutes from './routes/offers.js';
 import eventsRoutes from './routes/events.js';
 import statusRoutes from './routes/status.js';
 import adminAuthRoutes from './routes/admin/auth.js';
+import adminBusinessesRoutes from './routes/admin/businesses.js';
+import adminOffersRoutes from './routes/admin/offers.js';
+import adminEventsRoutes from './routes/admin/events.js';
 
 // Create Express app
 const app = express();
@@ -92,6 +95,9 @@ app.use('/api/offers', offersRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/admin/businesses', adminBusinessesRoutes);
+app.use('/api/admin/offers', adminOffersRoutes);
+app.use('/api/admin/events', adminEventsRoutes);
 
 // Error handling
 app.use(notFound);
