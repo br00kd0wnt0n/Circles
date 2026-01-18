@@ -165,7 +165,7 @@ function App() {
       }}
     >
       {/* Welcome Greeting - shows on first load */}
-      {showWelcome && (
+      {showWelcome && myHousehold && (
         <WelcomeGreeting
           householdName={myHousehold.householdName}
           weather={weather}
