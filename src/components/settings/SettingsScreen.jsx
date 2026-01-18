@@ -5,11 +5,12 @@ import { Button } from '../ui/Button';
 
 export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, onOpenContacts, onOpenCircles }) {
   const [editingName, setEditingName] = useState(false);
-  const [householdName, setHouseholdName] = useState(household.householdName);
+  const [householdName, setHouseholdName] = useState(household?.householdName || '');
   const [editingMember, setEditingMember] = useState(null);
-  const [members, setMembers] = useState(household.members);
+  const [members, setMembers] = useState(household?.members || []);
 
   const handleSaveName = () => {
+    if (!household) return;
     onUpdateHousehold({ ...household, householdName, members });
     setEditingName(false);
   };
@@ -22,6 +23,7 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
   };
 
   const handleSaveAll = () => {
+    if (!household) return;
     onUpdateHousehold({ ...household, householdName, members });
     onClose();
   };
