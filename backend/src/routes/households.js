@@ -45,12 +45,17 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
   }
 
   // Create household
+  const insertData = {
+    name,
+    status_state: 'available'
+  };
+  // Only add zip_code if provided (column may not exist in older schemas)
+  if (zipCode) {
+    insertData.zip_code = zipCode;
+  }
+
   const [household] = await db('households')
-    .insert({
-      name,
-      zip_code: zipCode,
-      status_state: 'available'
-    })
+    .insert(insertData)
     .returning('*');
 
   // Add user as primary member
@@ -81,17 +86,19 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
     .where({ household_id: household.id })
     .orderBy('is_primary', 'desc');
 
-  res.status(201).json({
+  const response = {
     id: household.id,
     name: household.name,
-    zipCode: household.zip_code,
     status: {
       state: household.status_state,
       note: household.status_note,
       timeWindow: household.status_time_window
     },
     members: allMembers
-  });
+  };
+  if (household.zip_code) response.zipCode = household.zip_code;
+
+  res.status(201).json(response);
 }));
 
 /**
@@ -107,17 +114,19 @@ router.get('/me', authenticate, asyncHandler(async (req, res) => {
     .where({ household_id: req.household.id })
     .orderBy('is_primary', 'desc');
 
-  res.json({
+  const response = {
     id: req.household.id,
     name: req.household.name,
-    zipCode: req.household.zip_code,
     status: {
       state: req.household.status_state,
       note: req.household.status_note,
       timeWindow: req.household.status_time_window
     },
     members
-  });
+  };
+  if (req.household.zip_code) response.zipCode = req.household.zip_code;
+
+  res.json(response);
 }));
 
 /**
@@ -144,17 +153,19 @@ router.put('/me', authenticate, asyncHandler(async (req, res) => {
     .where({ household_id: updated.id })
     .orderBy('is_primary', 'desc');
 
-  res.json({
+  const response = {
     id: updated.id,
     name: updated.name,
-    zipCode: updated.zip_code,
     status: {
       state: updated.status_state,
       note: updated.status_note,
       timeWindow: updated.status_time_window
     },
     members
-  });
+  };
+  if (updated.zip_code) response.zipCode = updated.zip_code;
+
+  res.json(response);
 }));
 
 /**
