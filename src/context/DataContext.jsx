@@ -368,7 +368,25 @@ export function DataProvider({ children }) {
     // For compatibility with existing useAppState
     myHousehold: household,
     updateHousehold: () => {}, // TODO: implement
-    friendHouseholds: demoMode ? (friendHouseholds || []) : (contacts || []),
+    // Transform contacts to match friendHouseholds shape for the UI
+    friendHouseholds: demoMode
+      ? (friendHouseholds || [])
+      : (contacts || []).map(contact => ({
+          id: contact.id,
+          householdName: contact.displayName || contact.householdName || 'Unknown',
+          members: [{
+            id: contact.id,
+            name: contact.displayName || 'Unknown',
+            avatar: contact.avatar || '👤',
+            role: 'parent'
+          }],
+          status: contact.status || { state: 'available', note: null, timeWindow: null },
+          circleIds: (contact.circles || []).map(c => c.id),
+          // Keep original contact data for reference
+          isAppUser: contact.isAppUser,
+          linkedHouseholdId: contact.linkedHouseholdId,
+          phone: contact.phone
+        })),
 
     // Production mode flag (no demo data)
     isProductionMode: !DEMO_MODE_ENABLED,

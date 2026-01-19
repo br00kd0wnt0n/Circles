@@ -108,7 +108,7 @@ const circleLayout = {
   'nyc-friends': { cx: 50, cy: 72, r: circleSizes['nyc-friends'] }
 };
 
-// Contact positions - based on actual overlap geometry
+// Contact positions - based on actual overlap geometry (for demo data)
 const circlePositions = {
   // rock-academy only: Barretts - inside Rock circle
   'barretts': { x: 14, y: 26 },
@@ -132,6 +132,27 @@ const circlePositions = {
 
   // All three circles (center): Mandy - TRUE center of triple overlap
   'mandy': { x: 46, y: 42 },
+};
+
+// Generate dynamic position for contacts not in hardcoded positions
+const generateDynamicPosition = (index, total) => {
+  // Create a grid-like scattered pattern
+  const cols = Math.ceil(Math.sqrt(total));
+  const row = Math.floor(index / cols);
+  const col = index % cols;
+
+  // Add some randomness to avoid perfect grid
+  const jitterX = (Math.sin(index * 7.3) * 10);
+  const jitterY = (Math.cos(index * 5.7) * 8);
+
+  // Spread across 15-85% of the space
+  const x = 15 + (col / Math.max(cols - 1, 1)) * 70 + jitterX;
+  const y = 15 + (row / Math.max(Math.ceil(total / cols) - 1, 1)) * 70 + jitterY;
+
+  return {
+    x: Math.max(10, Math.min(90, x)),
+    y: Math.max(10, Math.min(90, y))
+  };
 };
 
 // Get short display name
@@ -262,7 +283,7 @@ export function UnifiedHomeCircles({
 
   const availableFriends = useMemo(() => {
     const available = liveHouseholds.filter(h =>
-      h.status.state === 'available' || h.status.state === 'open'
+      h.status?.state === 'available' || h.status?.state === 'open'
     );
     return { available: available.length, total: liveHouseholds.length };
   }, [liveHouseholds]);
@@ -460,15 +481,18 @@ export function UnifiedHomeCircles({
 
           {/* Contact dots */}
           {liveHouseholds.map((household, index) => {
-          const scatteredPos = scatteredPositions[household.id] || { x: 50, y: 50 };
-          const circlePos = circlePositions[household.id] || scatteredPos;
+          // Use hardcoded positions for demo data, otherwise generate dynamic positions
+          const dynamicPos = generateDynamicPosition(index, liveHouseholds.length);
+          const scatteredPos = scatteredPositions[household.id] || dynamicPos;
+          const circlePos = circlePositions[household.id] || dynamicPos;
           const targetPos = isVennView ? circlePos : scatteredPos;
 
-          const color = statusColors[household.status.state] || statusColors.busy;
+          const statusState = household.status?.state || 'available';
+          const color = statusColors[statusState] || statusColors.available;
           const isSelected = selectedHousehold?.id === household.id;
           const isHovered = hoveredId === household.id;
-          const hasNote = !!household.status.note;
-          const isAvailable = household.status.state !== 'busy';
+          const hasNote = !!household.status?.note;
+          const isAvailable = statusState !== 'busy';
 
           // Unique float animation parameters for each contact
           const floatDuration = 4 + (index % 3) * 0.8;
@@ -543,8 +567,8 @@ export function UnifiedHomeCircles({
                 className="relative rounded-full shadow-md"
                 style={{ backgroundColor: color }}
                 animate={{
-                  width: household.status.state === 'busy' ? 24 : household.status.state === 'open' ? 36 : 40,
-                  height: household.status.state === 'busy' ? 24 : household.status.state === 'open' ? 36 : 40,
+                  width: statusState === 'busy' ? 24 : statusState === 'open' ? 36 : 40,
+                  height: statusState === 'busy' ? 24 : statusState === 'open' ? 36 : 40,
                   boxShadow: isSelected
                     ? `0 0 0 3px ${color}50, 0 4px 12px ${color}60`
                     : `0 2px 6px rgba(0,0,0,0.1)`,
@@ -662,7 +686,7 @@ export function UnifiedHomeCircles({
                     {selectedCircleData.name}
                   </h2>
                   <p className="text-sm text-white/80">
-                    {selectedCircleMembers.length} households · {selectedCircleMembers.filter(m => m.status.state !== 'busy').length} available
+                    {selectedCircleMembers.length} households · {selectedCircleMembers.filter(m => (m.status?.state || 'available') !== 'busy').length} available
                   </p>
                 </div>
               </div>
@@ -696,12 +720,12 @@ export function UnifiedHomeCircles({
                         <div className="relative">
                           <div
                             className="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md"
-                            style={{ backgroundColor: statusColors[household.status.state] || statusColors.busy }}
+                            style={{ backgroundColor: statusColors[household.status?.state] || statusColors.available }}
                           >
-                            {household.members[0]?.avatar}
+                            {household.members?.[0]?.avatar || '👤'}
                           </div>
                           <span className="absolute -bottom-0.5 -right-0.5">
-                            <StatusDot status={household.status.state} size="sm" />
+                            <StatusDot status={household.status?.state || 'available'} size="sm" />
                           </span>
                         </div>
                         <div>
@@ -709,16 +733,16 @@ export function UnifiedHomeCircles({
                             {household.householdName}
                           </p>
                           <p className="text-sm text-[#6B7280]">
-                            {household.members.map(m => m.name.split(' ')[0]).join(', ')}
+                            {(household.members || []).map(m => m.name?.split(' ')[0] || 'Unknown').join(', ')}
                           </p>
-                          {household.status.note && (
+                          {household.status?.note && (
                             <p className="text-xs mt-1 px-2 py-0.5 bg-gray-100 rounded-full inline-block text-[#6B7280]">
                               "{household.status.note}"
                             </p>
                           )}
                         </div>
                       </div>
-                      {household.status.state !== 'busy' && (
+                      {(household.status?.state || 'available') !== 'busy' && (
                         <button
                           onClick={() => {
                             onCreateHangout([household.id]);
@@ -749,7 +773,7 @@ export function UnifiedHomeCircles({
               <div className="flex gap-3">
                 <button
                   onClick={() => {
-                    onCreateHangout(selectedCircleMembers.filter(m => m.status.state !== 'busy').map(m => m.id));
+                    onCreateHangout(selectedCircleMembers.filter(m => (m.status?.state || 'available') !== 'busy').map(m => m.id));
                     setSelectedCircle(null);
                   }}
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/90 hover:bg-white text-gray-800 rounded-xl font-medium shadow-lg transition-colors"
