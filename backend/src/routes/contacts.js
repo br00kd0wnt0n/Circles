@@ -247,6 +247,47 @@ router.post('/:id/invite-to-app', authenticate, asyncHandler(async (req, res) =>
 }));
 
 /**
+ * PUT /api/contacts/:id
+ * Update a contact
+ */
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
+  if (!req.household) {
+    throw new AppError('No household found', 404);
+  }
+
+  const { displayName, avatar } = req.body;
+
+  const updateData = { updated_at: new Date() };
+  if (displayName !== undefined) updateData.display_name = displayName;
+  if (avatar !== undefined) updateData.avatar = avatar;
+
+  const [updated] = await db('contacts')
+    .where({ id: req.params.id, owner_household_id: req.household.id })
+    .update(updateData)
+    .returning('*');
+
+  if (!updated) {
+    throw new AppError('Contact not found', 404);
+  }
+
+  // Get circles for this contact
+  const circles = await db('circle_members')
+    .join('circles', 'circle_members.circle_id', 'circles.id')
+    .where({ 'circle_members.contact_id': updated.id })
+    .select('circles.id', 'circles.name', 'circles.color');
+
+  res.json({
+    id: updated.id,
+    displayName: updated.display_name,
+    phone: updated.phone,
+    avatar: updated.avatar,
+    isAppUser: updated.is_app_user,
+    linkedHouseholdId: updated.linked_household_id,
+    circles
+  });
+}));
+
+/**
  * DELETE /api/contacts/:id
  * Delete a contact
  */

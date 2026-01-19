@@ -328,6 +328,60 @@ export function DataProvider({ children }) {
     }
   }, [demoMode]);
 
+  // Update a contact
+  const updateContact = useCallback(async (contactId, updates) => {
+    if (demoMode) {
+      setContacts(prev => prev.map(c =>
+        c.id === contactId ? { ...c, ...updates } : c
+      ));
+      return;
+    }
+
+    try {
+      // Handle circle membership updates
+      if (updates.addToCircle) {
+        await circlesApi.addMember(updates.addToCircle, contactId);
+        // Refresh contacts to get updated circle list
+        const refreshed = await contactsApi.getAll();
+        setContacts(refreshed);
+        return;
+      }
+      if (updates.removeFromCircle) {
+        await circlesApi.removeMember(updates.removeFromCircle, contactId);
+        // Refresh contacts to get updated circle list
+        const refreshed = await contactsApi.getAll();
+        setContacts(refreshed);
+        return;
+      }
+
+      // Regular update
+      const updated = await contactsApi.update(contactId, updates);
+      setContacts(prev => prev.map(c =>
+        c.id === contactId ? { ...c, ...updated } : c
+      ));
+      return updated;
+    } catch (err) {
+      console.error('Failed to update contact:', err);
+      throw err;
+    }
+  }, [demoMode]);
+
+  // Delete a contact
+  const deleteContact = useCallback(async (contactId) => {
+    if (demoMode) {
+      setContacts(prev => prev.filter(c => c.id !== contactId));
+      return;
+    }
+
+    try {
+      await contactsApi.delete(contactId);
+      setContacts(prev => prev.filter(c => c.id !== contactId));
+    } catch (err) {
+      console.error('Failed to delete contact:', err);
+      throw err;
+    }
+  }, [demoMode]);
+
   // Refresh data
   const refresh = useCallback(() => {
     if (isAuthenticated) {
@@ -362,6 +416,8 @@ export function DataProvider({ children }) {
     addInvite,
     respondToInvite,
     addContact,
+    updateContact,
+    deleteContact,
     addCircle,
     refresh,
 

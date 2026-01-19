@@ -134,25 +134,146 @@ const circlePositions = {
   'mandy': { x: 46, y: 42 },
 };
 
-// Generate dynamic position for contacts not in hardcoded positions
+// Generate elegant symmetrical positions for contacts
+// Creates an expanding pattern: center -> ring -> outer ring
+const generateSymmetricalPositions = (total) => {
+  const positions = [];
+  const centerX = 50;
+  const centerY = 45; // Slightly above center for visual balance
+
+  if (total === 0) return positions;
+
+  if (total === 1) {
+    // Single contact at center
+    positions.push({ x: centerX, y: centerY });
+    return positions;
+  }
+
+  if (total === 2) {
+    // Two contacts side by side
+    positions.push({ x: 35, y: centerY });
+    positions.push({ x: 65, y: centerY });
+    return positions;
+  }
+
+  if (total === 3) {
+    // Triangle formation
+    positions.push({ x: 50, y: 28 }); // top
+    positions.push({ x: 30, y: 58 }); // bottom left
+    positions.push({ x: 70, y: 58 }); // bottom right
+    return positions;
+  }
+
+  if (total === 4) {
+    // Diamond formation
+    positions.push({ x: 50, y: 22 }); // top
+    positions.push({ x: 25, y: 45 }); // left
+    positions.push({ x: 75, y: 45 }); // right
+    positions.push({ x: 50, y: 68 }); // bottom
+    return positions;
+  }
+
+  if (total === 5) {
+    // Pentagon/star formation
+    const radius = 28;
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * 72 - 90) * (Math.PI / 180); // Start from top
+      positions.push({
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius
+      });
+    }
+    return positions;
+  }
+
+  if (total === 6) {
+    // Hexagon formation
+    const radius = 28;
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * 60 - 90) * (Math.PI / 180);
+      positions.push({
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius
+      });
+    }
+    return positions;
+  }
+
+  // For 7+ contacts: inner ring + outer ring pattern
+  // Calculate how many in inner vs outer ring
+  let innerCount, outerCount;
+  if (total <= 9) {
+    // 7-9: 3-4 inner, rest outer
+    innerCount = Math.min(4, Math.floor(total / 2));
+    outerCount = total - innerCount;
+  } else if (total <= 14) {
+    // 10-14: 5-6 inner, rest outer
+    innerCount = Math.min(6, Math.floor(total * 0.4));
+    outerCount = total - innerCount;
+  } else {
+    // 15+: inner ring, middle ring, outer ring
+    innerCount = 6;
+    const remaining = total - innerCount;
+    const middleCount = Math.min(8, Math.floor(remaining * 0.5));
+    outerCount = remaining - middleCount;
+
+    // Inner ring (radius 18)
+    for (let i = 0; i < innerCount; i++) {
+      const angle = (i * (360 / innerCount) - 90) * (Math.PI / 180);
+      positions.push({
+        x: centerX + Math.cos(angle) * 18,
+        y: centerY + Math.sin(angle) * 18
+      });
+    }
+
+    // Middle ring (radius 32)
+    for (let i = 0; i < middleCount; i++) {
+      const angle = (i * (360 / middleCount) - 90 + 15) * (Math.PI / 180); // Offset for visual interest
+      positions.push({
+        x: centerX + Math.cos(angle) * 32,
+        y: centerY + Math.sin(angle) * 32
+      });
+    }
+
+    // Outer ring (radius 42)
+    for (let i = 0; i < outerCount; i++) {
+      const angle = (i * (360 / outerCount) - 90) * (Math.PI / 180);
+      positions.push({
+        x: centerX + Math.cos(angle) * 42,
+        y: centerY + Math.sin(angle) * 42
+      });
+    }
+
+    return positions;
+  }
+
+  // Inner ring (radius 20)
+  const innerRadius = 20;
+  for (let i = 0; i < innerCount; i++) {
+    const angle = (i * (360 / innerCount) - 90) * (Math.PI / 180);
+    positions.push({
+      x: centerX + Math.cos(angle) * innerRadius,
+      y: centerY + Math.sin(angle) * innerRadius
+    });
+  }
+
+  // Outer ring (radius 38)
+  const outerRadius = 38;
+  for (let i = 0; i < outerCount; i++) {
+    const angle = (i * (360 / outerCount) - 90 + 30) * (Math.PI / 180); // Offset for visual interest
+    positions.push({
+      x: centerX + Math.cos(angle) * outerRadius,
+      y: centerY + Math.sin(angle) * outerRadius
+    });
+  }
+
+  return positions;
+};
+
+// Legacy function for backwards compatibility with demo data
 const generateDynamicPosition = (index, total) => {
-  // Create a grid-like scattered pattern
-  const cols = Math.ceil(Math.sqrt(total));
-  const row = Math.floor(index / cols);
-  const col = index % cols;
-
-  // Add some randomness to avoid perfect grid
-  const jitterX = (Math.sin(index * 7.3) * 10);
-  const jitterY = (Math.cos(index * 5.7) * 8);
-
-  // Spread across 15-85% of the space
-  const x = 15 + (col / Math.max(cols - 1, 1)) * 70 + jitterX;
-  const y = 15 + (row / Math.max(Math.ceil(total / cols) - 1, 1)) * 70 + jitterY;
-
-  return {
-    x: Math.max(10, Math.min(90, x)),
-    y: Math.max(10, Math.min(90, y))
-  };
+  const positions = generateSymmetricalPositions(total);
+  return positions[index] || { x: 50, y: 50 };
 };
 
 // Get short display name
@@ -488,11 +609,20 @@ export function UnifiedHomeCircles({
 
           {/* Contact dots */}
           {liveHouseholds.map((household, index) => {
-          // Use hardcoded positions for demo data, otherwise generate dynamic positions
-          const dynamicPos = generateDynamicPosition(index, liveHouseholds.length);
-          const scatteredPos = scatteredPositions[household.id] || dynamicPos;
-          const circlePos = circlePositions[household.id] || dynamicPos;
-          const targetPos = isVennView ? circlePos : scatteredPos;
+          // Generate symmetrical positions for all contacts
+          const symmetricalPos = generateDynamicPosition(index, liveHouseholds.length);
+
+          // For demo mode, use hardcoded positions if available
+          // For production, always use symmetrical positions
+          let targetPos;
+          if (demoMode) {
+            const scatteredPos = scatteredPositions[household.id] || symmetricalPos;
+            const circlePos = circlePositions[household.id] || symmetricalPos;
+            targetPos = isVennView ? circlePos : scatteredPos;
+          } else {
+            // Production mode: always use elegant symmetrical layout
+            targetPos = symmetricalPos;
+          }
 
           const statusState = household.status?.state || 'available';
           const color = statusColors[statusState] || statusColors.available;

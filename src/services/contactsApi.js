@@ -33,6 +33,13 @@ export const contactsApi = {
   },
 
   /**
+   * Update a contact
+   */
+  async update(contactId, data) {
+    return api.put(`/api/contacts/${contactId}`, data);
+  },
+
+  /**
    * Delete a contact
    */
   async delete(contactId) {

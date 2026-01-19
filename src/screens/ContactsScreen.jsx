@@ -7,7 +7,7 @@ import { StatusDot } from '../components/ui/StatusDot';
 
 export function ContactsScreen({ isOpen, onClose }) {
   const { theme, themeId } = useTheme();
-  const { contacts, friendHouseholds, circles, addContact } = useData();
+  const { contacts, friendHouseholds, circles, addContact, updateContact, deleteContact } = useData();
   const isDark = themeId === 'midnight';
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -262,7 +262,10 @@ export function ContactsScreen({ isOpen, onClose }) {
             contact={selectedContact}
             onClose={() => setSelectedContact(null)}
             isDark={isDark}
-            circles={circles}
+            circles={selectedContact.circles || []}
+            allCircles={circles}
+            onUpdateContact={updateContact}
+            onDeleteContact={deleteContact}
           />
         )}
       </AnimatePresence>
@@ -366,7 +369,59 @@ function AddContactModal({ onClose, isDark, onAddContact }) {
   );
 }
 
-function ContactDetailModal({ contact, onClose, isDark, circles }) {
+function ContactDetailModal({ contact, onClose, isDark, circles, onUpdateContact, onDeleteContact, allCircles }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(contact.displayName || '');
+  const [showCirclePicker, setShowCirclePicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const contactCircleIds = (contact.circles || []).map(c => c.id);
+
+  const handleSaveName = async () => {
+    if (!editName.trim() || editName === contact.displayName) {
+      setIsEditing(false);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onUpdateContact(contact.id, { displayName: editName.trim() });
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Failed to update contact:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggleCircle = async (circleId) => {
+    const isInCircle = contactCircleIds.includes(circleId);
+    setIsSaving(true);
+    try {
+      if (isInCircle) {
+        await onUpdateContact(contact.id, { removeFromCircle: circleId });
+      } else {
+        await onUpdateContact(contact.id, { addToCircle: circleId });
+      }
+    } catch (err) {
+      console.error('Failed to update circle membership:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Remove ${contact.displayName} from your contacts?`)) return;
+    setIsSaving(true);
+    try {
+      await onDeleteContact(contact.id);
+      onClose();
+    } catch (err) {
+      console.error('Failed to delete contact:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <motion.div
       className="fixed inset-0 z-60 flex items-end justify-center"
@@ -398,9 +453,39 @@ function ContactDetailModal({ contact, onClose, isDark, circles }) {
             )}
           </div>
           <div className="flex-1">
-            <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {contact.displayName}
-            </h3>
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                  autoFocus
+                  className={`text-xl font-bold bg-transparent border-b-2 border-[#9CAF88] outline-none w-full ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={isSaving}
+                  className="text-sm text-[#9CAF88] font-medium"
+                >
+                  {isSaving ? '...' : 'Save'}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {contact.displayName}
+                </h3>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-sm text-[#9CAF88] font-medium"
+                >
+                  Edit
+                </button>
+              </div>
+            )}
             {contact.status?.note && (
               <p className={`text-sm ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
                 {contact.status.note}
@@ -431,31 +516,74 @@ function ContactDetailModal({ contact, onClose, isDark, circles }) {
           <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
             Circles
           </h4>
-          <div className="flex flex-wrap gap-2">
-            {contact.circles?.map(circle => (
-              <div
-                key={circle.id}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-                style={{ backgroundColor: circle.color + '20' }}
+          {showCirclePicker ? (
+            <div className="space-y-2">
+              {(allCircles || []).map(circle => {
+                const isInCircle = contactCircleIds.includes(circle.id);
+                return (
+                  <button
+                    key={circle.id}
+                    onClick={() => handleToggleCircle(circle.id)}
+                    disabled={isSaving}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                      isInCircle
+                        ? 'ring-2 ring-[#9CAF88]'
+                        : isDark ? 'bg-white/5' : 'bg-gray-50'
+                    }`}
+                    style={{ backgroundColor: isInCircle ? `${circle.color}20` : undefined }}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: circle.color }}
+                    />
+                    <span className={isDark ? 'text-white' : 'text-gray-900'}>{circle.name}</span>
+                    {isInCircle && (
+                      <span className="ml-auto text-[#9CAF88]">✓</span>
+                    )}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setShowCirclePicker(false)}
+                className={`w-full py-2 text-center text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}
               >
+                Done
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {contact.circles?.map(circle => (
                 <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: circle.color }}
-                />
-                <span style={{ color: circle.color }}>{circle.name}</span>
-              </div>
-            ))}
-            <button className={`flex items-center gap-1 px-3 py-1.5 rounded-full border-2 border-dashed ${
-              isDark ? 'border-white/20 text-white/50' : 'border-gray-300 text-gray-400'
-            }`}>
-              <Plus className="w-4 h-4" />
-              Add
-            </button>
-          </div>
+                  key={circle.id}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                  style={{ backgroundColor: circle.color + '20' }}
+                >
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: circle.color }}
+                  />
+                  <span style={{ color: circle.color }}>{circle.name}</span>
+                </div>
+              ))}
+              <button
+                onClick={() => setShowCirclePicker(true)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border-2 border-dashed ${
+                  isDark ? 'border-white/20 text-white/50' : 'border-gray-300 text-gray-400'
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+                {contact.circles?.length ? 'Edit' : 'Add to Circle'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Danger Zone */}
-        <button className="flex items-center gap-2 text-red-500">
+        <button
+          onClick={handleDelete}
+          disabled={isSaving}
+          className="flex items-center gap-2 text-red-500 disabled:opacity-50"
+        >
           <Trash2 className="w-4 h-4" />
           <span>Remove Contact</span>
         </button>

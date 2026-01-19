@@ -1,30 +1,86 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, User, Users, Bell, Palette, HelpCircle, LogOut, Contact, CircleDot } from 'lucide-react';
 import { Button } from '../ui/Button';
+import householdsApi from '../../services/householdsApi';
+
+const AVATARS = ['👨', '👩', '👦', '👧', '🧒', '👶', '🐕', '🐈', '🏠'];
 
 export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, onOpenContacts, onOpenCircles }) {
   const [editingName, setEditingName] = useState(false);
-  const [householdName, setHouseholdName] = useState(household?.householdName || '');
+  const [householdName, setHouseholdName] = useState('');
   const [editingMember, setEditingMember] = useState(null);
-  const [members, setMembers] = useState(household?.members || []);
+  const [members, setMembers] = useState([]);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMember, setNewMember] = useState({ name: '', role: 'adult', avatar: '👤' });
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveName = () => {
-    if (!household) return;
-    onUpdateHousehold({ ...household, householdName, members });
-    setEditingName(false);
+  // Sync state when household changes
+  useEffect(() => {
+    if (household) {
+      setHouseholdName(household.householdName || household.name || '');
+      setMembers(household.members || []);
+    }
+  }, [household]);
+
+  const handleSaveName = async () => {
+    if (!household || !householdName.trim()) return;
+    setIsSaving(true);
+    try {
+      const updated = await householdsApi.update({ name: householdName.trim() });
+      onUpdateHousehold(updated);
+      setEditingName(false);
+    } catch (err) {
+      console.error('Failed to update household name:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleUpdateMember = (memberId, updates) => {
+  const handleUpdateMember = async (memberId, updates) => {
+    // Update local state immediately
     const newMembers = members.map(m =>
       m.id === memberId ? { ...m, ...updates } : m
     );
     setMembers(newMembers);
   };
 
+  const handleSaveMember = async (member) => {
+    setIsSaving(true);
+    try {
+      await householdsApi.updateMember(member.id, {
+        name: member.name,
+        role: member.role,
+        avatar: member.avatar
+      });
+      setEditingMember(null);
+    } catch (err) {
+      console.error('Failed to update member:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!newMember.name.trim()) return;
+    setIsSaving(true);
+    try {
+      const added = await householdsApi.addMember({
+        name: newMember.name.trim(),
+        role: newMember.role,
+        avatar: newMember.avatar
+      });
+      setMembers(prev => [...prev, added]);
+      setNewMember({ name: '', role: 'adult', avatar: '👤' });
+      setShowAddMember(false);
+    } catch (err) {
+      console.error('Failed to add member:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveAll = () => {
-    if (!household) return;
-    onUpdateHousehold({ ...household, householdName, members });
     onClose();
   };
 
@@ -103,42 +159,135 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-[#F4F4F5] flex items-center justify-center text-lg">
-                            {member.avatar}
+                            {member.avatar || '👤'}
                           </div>
                           <div>
                             {editingMember === member.id ? (
-                              <input
-                                type="text"
-                                value={member.name}
-                                onChange={(e) => handleUpdateMember(member.id, { name: e.target.value })}
-                                onBlur={() => setEditingMember(null)}
-                                onKeyDown={(e) => e.key === 'Enter' && setEditingMember(null)}
-                                autoFocus
-                                className="font-medium text-[#1F2937] bg-transparent border-b-2 border-[#9CAF88] outline-none"
-                              />
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={member.name}
+                                  onChange={(e) => handleUpdateMember(member.id, { name: e.target.value })}
+                                  autoFocus
+                                  className="font-medium text-[#1F2937] bg-transparent border-b-2 border-[#9CAF88] outline-none w-full"
+                                />
+                                <div className="flex gap-1">
+                                  {['adult', 'child', 'pet'].map((role) => (
+                                    <button
+                                      key={role}
+                                      onClick={() => handleUpdateMember(member.id, { role })}
+                                      className={`px-2 py-0.5 rounded text-xs capitalize ${
+                                        member.role === role
+                                          ? 'bg-[#9CAF88] text-white'
+                                          : 'bg-gray-100 text-gray-600'
+                                      }`}
+                                    >
+                                      {role}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
                             ) : (
-                              <p className="font-medium text-[#1F2937]">{member.name}</p>
+                              <>
+                                <p className="font-medium text-[#1F2937]">{member.name}</p>
+                                <p className="text-xs text-[#6B7280] capitalize">{member.role}</p>
+                              </>
                             )}
-                            <p className="text-xs text-[#6B7280] capitalize">{member.role}</p>
                           </div>
                         </div>
                         <button
-                          onClick={() => setEditingMember(editingMember === member.id ? null : member.id)}
-                          className="text-sm text-[#9CAF88] font-medium"
+                          onClick={() => {
+                            if (editingMember === member.id) {
+                              handleSaveMember(member);
+                            } else {
+                              setEditingMember(member.id);
+                            }
+                          }}
+                          disabled={isSaving}
+                          className="text-sm text-[#9CAF88] font-medium disabled:opacity-50"
                         >
-                          {editingMember === member.id ? 'Done' : 'Edit'}
+                          {editingMember === member.id ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
                         </button>
                       </div>
                     </div>
                   ))}
 
                   {/* Add Member */}
-                  <button className="w-full p-4 text-left flex items-center gap-3 text-[#9CAF88]">
-                    <div className="w-10 h-10 rounded-full bg-[#E8F0E3] flex items-center justify-center">
-                      <span className="text-lg">+</span>
+                  {showAddMember ? (
+                    <div className="p-4 border-t border-gray-100">
+                      <div className="flex items-start gap-3">
+                        <div className="relative group">
+                          <button className="w-10 h-10 rounded-full bg-[#F4F4F5] flex items-center justify-center text-lg hover:bg-[#E8F0E3] transition-colors">
+                            {newMember.avatar}
+                          </button>
+                          <div className="absolute left-0 top-full mt-1 bg-white rounded-xl p-2 grid grid-cols-3 gap-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-lg border border-gray-200">
+                            {AVATARS.map((avatar) => (
+                              <button
+                                key={avatar}
+                                onClick={() => setNewMember(prev => ({ ...prev, avatar }))}
+                                className="w-8 h-8 text-lg hover:bg-gray-100 rounded-lg"
+                              >
+                                {avatar}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <input
+                            type="text"
+                            value={newMember.name}
+                            onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Name"
+                            autoFocus
+                            className="w-full px-2 py-1 border border-gray-200 rounded-lg text-[#1F2937] focus:border-[#9CAF88] outline-none"
+                          />
+                          <div className="flex gap-1">
+                            {['adult', 'child', 'pet'].map((role) => (
+                              <button
+                                key={role}
+                                onClick={() => setNewMember(prev => ({ ...prev, role }))}
+                                className={`px-2 py-0.5 rounded text-xs capitalize ${
+                                  newMember.role === role
+                                    ? 'bg-[#9CAF88] text-white'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                {role}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              onClick={() => {
+                                setShowAddMember(false);
+                                setNewMember({ name: '', role: 'adult', avatar: '👤' });
+                              }}
+                              className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleAddMember}
+                              disabled={!newMember.name.trim() || isSaving}
+                              className="px-3 py-1 text-sm bg-[#9CAF88] text-white rounded-lg disabled:opacity-50"
+                            >
+                              {isSaving ? 'Adding...' : 'Add'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <span className="font-medium">Add Family Member</span>
-                  </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowAddMember(true)}
+                      className="w-full p-4 text-left flex items-center gap-3 text-[#9CAF88] hover:bg-gray-50"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#E8F0E3] flex items-center justify-center">
+                        <span className="text-lg">+</span>
+                      </div>
+                      <span className="font-medium">Add Family Member</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
