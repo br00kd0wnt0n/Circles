@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, User, Users, Bell, Palette, HelpCircle, LogOut, Contact, CircleDot } from 'lucide-react';
+import { X, ChevronRight, User, Users, Bell, Palette, HelpCircle, LogOut, Contact, CircleDot, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import householdsApi from '../../services/householdsApi';
 
@@ -75,6 +75,24 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
       setShowAddMember(false);
     } catch (err) {
       console.error('Failed to add member:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteMember = async (memberId) => {
+    if (members.length <= 1) {
+      alert('You must have at least one household member');
+      return;
+    }
+    if (!window.confirm('Remove this member from your household?')) return;
+
+    setIsSaving(true);
+    try {
+      await householdsApi.removeMember(memberId);
+      setMembers(prev => prev.filter(m => m.id !== memberId));
+    } catch (err) {
+      console.error('Failed to delete member:', err);
     } finally {
       setIsSaving(false);
     }
@@ -195,19 +213,31 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            if (editingMember === member.id) {
-                              handleSaveMember(member);
-                            } else {
-                              setEditingMember(member.id);
-                            }
-                          }}
-                          disabled={isSaving}
-                          className="text-sm text-[#9CAF88] font-medium disabled:opacity-50"
-                        >
-                          {editingMember === member.id ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              if (editingMember === member.id) {
+                                handleSaveMember(member);
+                              } else {
+                                setEditingMember(member.id);
+                              }
+                            }}
+                            disabled={isSaving}
+                            className="text-sm text-[#9CAF88] font-medium disabled:opacity-50"
+                          >
+                            {editingMember === member.id ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
+                          </button>
+                          {members.length > 1 && (
+                            <button
+                              onClick={() => handleDeleteMember(member.id)}
+                              disabled={isSaving}
+                              className="p-1 text-red-400 hover:text-red-500 disabled:opacity-50"
+                              title="Remove member"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
