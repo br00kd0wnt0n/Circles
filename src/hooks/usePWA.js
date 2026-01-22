@@ -41,40 +41,40 @@ export function usePWA() {
 
   // Service worker registration
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      registerServiceWorker();
-    }
-  }, []);
+    if (!('serviceWorker' in navigator)) return;
 
-  const registerServiceWorker = async () => {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/'
-      });
-
-      setSwRegistration(registration);
-      console.log('[PWA] Service worker registered:', registration.scope);
-
-      // Check for updates
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            setUpdateAvailable(true);
-            console.log('[PWA] New version available');
-          }
+    const registerServiceWorker = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/'
         });
-      });
 
-      // Get existing push subscription
-      const existingSubscription = await registration.pushManager.getSubscription();
-      if (existingSubscription) {
-        setPushSubscription(existingSubscription);
+        setSwRegistration(registration);
+        console.log('[PWA] Service worker registered:', registration.scope);
+
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              setUpdateAvailable(true);
+              console.log('[PWA] New version available');
+            }
+          });
+        });
+
+        // Get existing push subscription
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+          setPushSubscription(existingSubscription);
+        }
+      } catch (error) {
+        console.error('[PWA] Service worker registration failed:', error);
       }
-    } catch (error) {
-      console.error('[PWA] Service worker registration failed:', error);
-    }
-  };
+    };
+
+    registerServiceWorker();
+  }, []);
 
   // Install prompt (beforeinstallprompt event)
   useEffect(() => {

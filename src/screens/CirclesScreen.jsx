@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { X, Plus, Users, Trash2, Edit2, Check, ChevronRight } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
@@ -10,8 +10,8 @@ const CIRCLE_COLORS = [
 ];
 
 export function CirclesScreen({ isOpen, onClose }) {
-  const { theme, themeId } = useTheme();
-  const { circles, friendHouseholds, contacts, addCircle, updateCircle } = useData();
+  const { themeId } = useTheme();
+  const { circles, friendHouseholds, addCircle, updateCircle } = useData();
   const isDark = themeId === 'midnight';
 
   const [showCreateCircle, setShowCreateCircle] = useState(false);
@@ -174,7 +174,6 @@ export function CirclesScreen({ isOpen, onClose }) {
             }}
             isDark={isDark}
             friendHouseholds={friendHouseholds}
-            contacts={contacts}
           />
         )}
       </AnimatePresence>
@@ -187,7 +186,6 @@ export function CirclesScreen({ isOpen, onClose }) {
             onClose={() => setEditingCircle(null)}
             isDark={isDark}
             friendHouseholds={friendHouseholds}
-            contacts={contacts}
             onUpdateCircle={updateCircle}
           />
         )}
@@ -295,7 +293,7 @@ function CreateCircleModal({ onClose, isDark, existingColors, onAddCircle }) {
   );
 }
 
-function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds, contacts }) {
+function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds }) {
   const members = (friendHouseholds || []).filter(h => h.circleIds?.includes(circle.id));
 
   return (
@@ -408,7 +406,7 @@ function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds, 
   );
 }
 
-function EditCircleModal({ circle, onClose, isDark, friendHouseholds, contacts, onUpdateCircle }) {
+function EditCircleModal({ circle, onClose, isDark, friendHouseholds, onUpdateCircle }) {
   const safeHouseholds = friendHouseholds || [];
   const [name, setName] = useState(circle.name);
   const [selectedColor, setSelectedColor] = useState(circle.color);
@@ -435,7 +433,7 @@ function EditCircleModal({ circle, onClose, isDark, friendHouseholds, contacts, 
         memberIds: selectedMembers
       });
       onClose();
-    } catch (err) {
+    } catch {
       // Error already logged in DataContext
     } finally {
       setIsSaving(false);

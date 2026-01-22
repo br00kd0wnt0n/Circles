@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../config/database.js';
-import { authenticate, optionalAuth } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/auth.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 
 const router = Router();

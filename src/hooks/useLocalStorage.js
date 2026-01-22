@@ -34,7 +34,7 @@ export function useAppState() {
     note: null
   });
 
-  // Default example hangout
+  // Default example hangout (static demo data)
   const defaultInvites = [
     {
       id: 'example-1',
@@ -45,7 +45,7 @@ export function useAppState() {
       location: 'Our place',
       invitedHouseholds: ['barretts', 'sachs'],
       createdBy: 'downtons',
-      createdAt: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+      createdAt: '2025-01-20T12:00:00.000Z',
       responses: {
         'barretts': 'accepted',
         'sachs': 'pending'

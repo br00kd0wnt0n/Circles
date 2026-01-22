@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { BottomNav } from './components/ui/BottomNav';
 import { UnifiedHomeCircles } from './components/home/UnifiedHomeCircles';
 import { ActivityScreen } from './components/activity/ActivityScreen';
@@ -30,7 +30,7 @@ function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Auth state
-  const { isLoading: authLoading, isAuthenticated, needsOnboarding } = useAuth();
+  const { isAuthenticated, needsOnboarding } = useAuth();
 
   // Data from API or demo mode
   const {
@@ -42,7 +42,6 @@ function App() {
     addInvite,
     respondToInvite,
     friendHouseholds,
-    contacts,
     requiresAuth,
     demoMode
   } = useData();

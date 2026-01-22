@@ -24,7 +24,7 @@ const CIRCLE_COLORS = [
 const AVATARS = ['👨', '👩', '👦', '👧', '🧒', '👶', '🐕', '🐈', '🏠'];
 
 export default function OnboardingFlow() {
-  const { requestOtp, verifyOtp, createHousehold, user, needsOnboarding } = useAuth();
+  const { requestOtp, verifyOtp, createHousehold, user } = useAuth();
   const { addContact, addCircle, refresh } = useData();
 
   const [step, setStep] = useState(user ? STEPS.HOUSEHOLD : STEPS.PHONE);

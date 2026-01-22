@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { X, Search, Plus, UserPlus, Phone, MessageCircle, MoreVertical, Trash2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
 import { StatusDot } from '../components/ui/StatusDot';
 
 export function ContactsScreen({ isOpen, onClose }) {
-  const { theme, themeId } = useTheme();
+  const { themeId } = useTheme();
   const { contacts, friendHouseholds, circles, addContact, updateContact, deleteContact } = useData();
   const isDark = themeId === 'midnight';
 
@@ -262,7 +262,6 @@ export function ContactsScreen({ isOpen, onClose }) {
             contact={selectedContact}
             onClose={() => setSelectedContact(null)}
             isDark={isDark}
-            circles={selectedContact.circles || []}
             allCircles={circles}
             onUpdateContact={updateContact}
             onDeleteContact={deleteContact}
@@ -369,7 +368,7 @@ function AddContactModal({ onClose, isDark, onAddContact }) {
   );
 }
 
-function ContactDetailModal({ contact, onClose, isDark, circles, onUpdateContact, onDeleteContact, allCircles }) {
+function ContactDetailModal({ contact, onClose, isDark, onUpdateContact, onDeleteContact, allCircles }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(contact.displayName || '');
   const [showCirclePicker, setShowCirclePicker] = useState(false);
