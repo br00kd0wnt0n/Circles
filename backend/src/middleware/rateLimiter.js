@@ -49,9 +49,35 @@ export const inviteLimiter = rateLimit({
   keyGenerator: (req) => req.user?.id || req.ip
 });
 
+/**
+ * Admin login rate limiter (strict)
+ * 5 attempts per 15 minutes per IP
+ */
+export const adminAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: { error: 'Too many admin login attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+/**
+ * Admin setup rate limiter (very strict)
+ * Only 3 attempts per hour - setup should only happen once
+ */
+export const adminSetupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  message: { error: 'Too many setup attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 export default {
   generalLimiter,
   authLimiter,
   otpLimiter,
-  inviteLimiter
+  inviteLimiter,
+  adminAuthLimiter,
+  adminSetupLimiter
 };

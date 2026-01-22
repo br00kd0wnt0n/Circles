@@ -63,8 +63,14 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
+    // In production, require an origin header
+    if (!origin) {
+      // Allow no-origin only in development (for curl, Postman, mobile apps)
+      if (env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+      return callback(new Error('Origin header required'));
+    }
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }

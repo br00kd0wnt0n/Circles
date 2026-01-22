@@ -11,7 +11,7 @@ const CIRCLE_COLORS = [
 
 export function CirclesScreen({ isOpen, onClose }) {
   const { theme, themeId } = useTheme();
-  const { circles, friendHouseholds, contacts, addCircle } = useData();
+  const { circles, friendHouseholds, contacts, addCircle, updateCircle } = useData();
   const isDark = themeId === 'midnight';
 
   const [showCreateCircle, setShowCreateCircle] = useState(false);
@@ -188,6 +188,7 @@ export function CirclesScreen({ isOpen, onClose }) {
             isDark={isDark}
             friendHouseholds={friendHouseholds}
             contacts={contacts}
+            onUpdateCircle={updateCircle}
           />
         )}
       </AnimatePresence>
@@ -407,13 +408,14 @@ function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds, 
   );
 }
 
-function EditCircleModal({ circle, onClose, isDark, friendHouseholds, contacts }) {
+function EditCircleModal({ circle, onClose, isDark, friendHouseholds, contacts, onUpdateCircle }) {
   const safeHouseholds = friendHouseholds || [];
   const [name, setName] = useState(circle.name);
   const [selectedColor, setSelectedColor] = useState(circle.color);
   const [selectedMembers, setSelectedMembers] = useState(
     safeHouseholds.filter(h => h.circleIds?.includes(circle.id)).map(h => h.id)
   );
+  const [isSaving, setIsSaving] = useState(false);
 
   const toggleMember = (memberId) => {
     setSelectedMembers(prev =>
@@ -423,10 +425,21 @@ function EditCircleModal({ circle, onClose, isDark, friendHouseholds, contacts }
     );
   };
 
-  const handleSave = () => {
-    // TODO: Call API to update circle
-    console.log('Update circle:', { id: circle.id, name, color: selectedColor, members: selectedMembers });
-    onClose();
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setIsSaving(true);
+    try {
+      await onUpdateCircle(circle.id, {
+        name: name.trim(),
+        color: selectedColor,
+        memberIds: selectedMembers
+      });
+      onClose();
+    } catch (err) {
+      // Error already logged in DataContext
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -541,10 +554,10 @@ function EditCircleModal({ circle, onClose, isDark, friendHouseholds, contacts }
           </button>
           <button
             onClick={handleSave}
-            disabled={!name.trim()}
+            disabled={!name.trim() || isSaving}
             className="flex-1 py-3 rounded-xl bg-[#9CAF88] text-white disabled:opacity-50"
           >
-            Save Changes
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </motion.div>

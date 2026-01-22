@@ -18,7 +18,7 @@ const DEMO_MODE_ENABLED = import.meta.env.VITE_DEMO_MODE !== 'false';
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
-  const { isAuthenticated, household: authHousehold, needsOnboarding } = useAuth();
+  const { isAuthenticated, household: authHousehold, needsOnboarding, updateHousehold: authUpdateHousehold } = useAuth();
 
   // Core data state
   const [contacts, setContacts] = useState([]);
@@ -200,7 +200,7 @@ export function DataProvider({ children }) {
             ? {
                 ...inv,
                 recipients: inv.recipients?.map(r =>
-                  r.household_id === response.householdId
+                  r.householdId === response.householdId || r.household_id === response.householdId
                     ? { ...r, response: response.response }
                     : r
                 )
@@ -328,6 +328,32 @@ export function DataProvider({ children }) {
     }
   }, [demoMode]);
 
+  // Update a circle
+  const updateCircle = useCallback(async (circleId, updates) => {
+    if (demoMode) {
+      setCircles(prev => prev.map(c =>
+        c.id === circleId ? { ...c, ...updates } : c
+      ));
+      return;
+    }
+
+    try {
+      const updated = await circlesApi.update(circleId, updates);
+      setCircles(prev => prev.map(c =>
+        c.id === circleId ? { ...c, ...updated } : c
+      ));
+      // If members were updated, refresh contacts
+      if (updates.memberIds) {
+        const refreshed = await contactsApi.getAll();
+        setContacts(refreshed);
+      }
+      return updated;
+    } catch (err) {
+      console.error('Failed to update circle:', err);
+      throw err;
+    }
+  }, [demoMode]);
+
   // Update a contact
   const updateContact = useCallback(async (contactId, updates) => {
     if (demoMode) {
@@ -419,15 +445,15 @@ export function DataProvider({ children }) {
     updateContact,
     deleteContact,
     addCircle,
+    updateCircle,
     refresh,
 
     // For compatibility with existing useAppState
     myHousehold: household,
-    updateHousehold: () => {}, // TODO: implement
+    updateHousehold: authUpdateHousehold,
     // Transform contacts to match friendHouseholds shape for the UI
-    friendHouseholds: demoMode
-      ? (friendHouseholds || [])
-      : (contacts || []).map(contact => ({
+    // Use consistent transformation for both demo and API mode
+    friendHouseholds: (contacts || []).map(contact => ({
           id: contact.id,
           householdName: contact.displayName || contact.householdName || 'Unknown',
           members: [{

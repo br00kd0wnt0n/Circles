@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 /**
  * @param { import("knex").Knex } knex
@@ -8,14 +9,15 @@ export async function seed(knex) {
   // Clear existing admin users
   await knex('admin_users').del();
 
-  // Create default admin user
-  // IMPORTANT: Change this password after first login!
-  const defaultPassword = 'circles-admin-2024';
-  const hashedPassword = await bcrypt.hash(defaultPassword, 12);
+  // Use environment variable or generate a secure random password
+  const adminPassword = process.env.ADMIN_SEED_PASSWORD || crypto.randomBytes(16).toString('hex');
+  const adminEmail = process.env.ADMIN_SEED_EMAIL || 'admin@circles.app';
+
+  const hashedPassword = await bcrypt.hash(adminPassword, 12);
 
   await knex('admin_users').insert([
     {
-      email: 'admin@circles.app',
+      email: adminEmail,
       password_hash: hashedPassword,
       name: 'Admin',
       role: 'super_admin',
@@ -23,8 +25,14 @@ export async function seed(knex) {
     }
   ]);
 
-  console.log('✅ Admin user seeded');
-  console.log('📧 Email: admin@circles.app');
-  console.log('🔑 Password: circles-admin-2024');
-  console.log('⚠️  CHANGE THIS PASSWORD AFTER FIRST LOGIN!');
+  console.log('Admin user seeded');
+  console.log(`Email: ${adminEmail}`);
+
+  // Only show password if it was auto-generated (not from env var)
+  if (!process.env.ADMIN_SEED_PASSWORD) {
+    console.log(`Generated Password: ${adminPassword}`);
+    console.log('SAVE THIS PASSWORD - it will not be shown again!');
+  } else {
+    console.log('Password: [set from ADMIN_SEED_PASSWORD env var]');
+  }
 }

@@ -35,11 +35,8 @@ export function MessageComposer({ isOpen, onClose, recipients = [], circleName =
   const handleSend = () => {
     if (selectedRecipients.length === 0 || !message.trim()) return;
 
-    // TODO: Implement actual send functionality
-    console.log('Sending message:', {
-      to: selectedRecipients,
-      message: message.trim()
-    });
+    // TODO: Implement actual send functionality via messaging API
+    // For now, just close the modal - message sending not yet implemented
 
     // Reset and close
     setMessage('');

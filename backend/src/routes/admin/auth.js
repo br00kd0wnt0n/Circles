@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../../config/database.js';
 import env from '../../config/env.js';
+import { adminAuthLimiter, adminSetupLimiter } from '../../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
  * Admin login
  * POST /api/admin/auth/login
  */
-router.post('/login', async (req, res, next) => {
+router.post('/login', adminAuthLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -89,7 +90,7 @@ router.get('/me', async (req, res, next) => {
  * Create initial admin (only works once)
  * POST /api/admin/auth/setup
  */
-router.post('/setup', async (req, res, next) => {
+router.post('/setup', adminSetupLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body;
 

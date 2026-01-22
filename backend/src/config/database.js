@@ -10,7 +10,10 @@ function parseConnectionString(url) {
     user: parsed.username,
     password: parsed.password,
     database: parsed.pathname.slice(1), // Remove leading /
-    ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    // SSL configuration: secure by default, can be relaxed via env var for certain providers
+    ssl: env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
+      : false
   };
 }
 
