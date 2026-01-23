@@ -1,13 +1,16 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import circlesApi from '../services/circlesApi';
+import { circlesService } from '../services/supabaseService';
 import PhoneInput from '../components/auth/PhoneInput';
 import OTPInput from '../components/auth/OTPInput';
 
 const STEPS = {
+  AUTH_METHOD: 'auth_method',
   PHONE: 'phone',
   OTP: 'otp',
+  EMAIL: 'email',
+  EMAIL_SENT: 'email_sent',
   HOUSEHOLD: 'household',
   MEMBERS: 'members',
   FRIENDS: 'friends',
@@ -24,12 +27,16 @@ const CIRCLE_COLORS = [
 const AVATARS = ['👨', '👩', '👦', '👧', '🧒', '👶', '🐕', '🐈', '🏠'];
 
 export default function OnboardingFlow() {
-  const { requestOtp, verifyOtp, createHousehold, user } = useAuth();
+  const { requestOtp, verifyOtp, signInEmail, signUpEmail, sendMagicLink, createHousehold, user } = useAuth();
   const { addContact, addCircle, refresh } = useData();
 
-  const [step, setStep] = useState(user ? STEPS.HOUSEHOLD : STEPS.PHONE);
+  const [step, setStep] = useState(user ? STEPS.HOUSEHOLD : STEPS.AUTH_METHOD);
+  const [authMethod, setAuthMethod] = useState(null); // 'phone' or 'email'
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(true);
   const [householdName, setHouseholdName] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [members, setMembers] = useState([
@@ -86,6 +93,60 @@ export default function OnboardingFlow() {
       setIsLoading(false);
     }
   }, [phone, verifyOtp]);
+
+  // Email auth
+  const handleEmailAuth = useCallback(async () => {
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email');
+      return;
+    }
+    if (!password || password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      if (isSignUp) {
+        const result = await signUpEmail(email, password);
+        if (result.user && !result.session) {
+          // Email confirmation required
+          setStep(STEPS.EMAIL_SENT);
+        } else {
+          setStep(STEPS.HOUSEHOLD);
+        }
+      } else {
+        await signInEmail(email, password);
+        setStep(STEPS.HOUSEHOLD);
+      }
+    } catch (err) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [email, password, isSignUp, signInEmail, signUpEmail]);
+
+  // Magic link (passwordless email)
+  const handleMagicLink = useCallback(async () => {
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await sendMagicLink(email);
+      setStep(STEPS.EMAIL_SENT);
+    } catch (err) {
+      setError(err.message || 'Failed to send magic link');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [email, sendMagicLink]);
 
   // Household step
   const handleHouseholdNext = useCallback(() => {
@@ -212,7 +273,7 @@ export default function OnboardingFlow() {
       const assignmentPromises = [];
       for (const [friendId, circleIds] of Object.entries(assignments)) {
         for (const circleId of circleIds) {
-          assignmentPromises.push(circlesApi.addMember(circleId, friendId));
+          assignmentPromises.push(circlesService.addMember(circleId, friendId));
         }
       }
       await Promise.all(assignmentPromises);
@@ -274,23 +335,142 @@ export default function OnboardingFlow() {
           <span className="text-2xl font-bold text-white">Circles</span>
         </div>
 
-        {/* Progress */}
-        <div className="flex gap-1 mb-8">
-          {[STEPS.PHONE, STEPS.OTP, STEPS.HOUSEHOLD, STEPS.MEMBERS, STEPS.FRIENDS, STEPS.CIRCLES, STEPS.ASSIGN].map((s, i) => (
-            <div
-              key={s}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                i <= [STEPS.PHONE, STEPS.OTP, STEPS.HOUSEHOLD, STEPS.MEMBERS, STEPS.FRIENDS, STEPS.CIRCLES, STEPS.ASSIGN].indexOf(step)
-                  ? 'bg-[#9CAF88]'
-                  : 'bg-white/20'
-              }`}
-            />
-          ))}
-        </div>
+        {/* Progress - only show after auth method selection */}
+        {step !== STEPS.AUTH_METHOD && (
+          <div className="flex gap-1 mb-8">
+            {['auth', 'household', 'members', 'friends', 'circles', 'assign'].map((s, i) => {
+              const currentIndex =
+                [STEPS.PHONE, STEPS.OTP, STEPS.EMAIL, STEPS.EMAIL_SENT].includes(step) ? 0 :
+                step === STEPS.HOUSEHOLD ? 1 :
+                step === STEPS.MEMBERS ? 2 :
+                step === STEPS.FRIENDS ? 3 :
+                step === STEPS.CIRCLES ? 4 :
+                step === STEPS.ASSIGN ? 5 : 0;
+              return (
+                <div
+                  key={s}
+                  className={`h-1 flex-1 rounded-full transition-colors ${
+                    i <= currentIndex ? 'bg-[#9CAF88]' : 'bg-white/20'
+                  }`}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Content */}
       <div className="flex-1 px-6 pb-6">
+        {step === STEPS.AUTH_METHOD && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-white mb-2">Welcome to Circles</h1>
+              <p className="text-white/70">How would you like to sign in?</p>
+            </div>
+
+            <div className="space-y-3 pt-4">
+              <button
+                onClick={() => { setAuthMethod('email'); setStep(STEPS.EMAIL); }}
+                className="w-full py-4 bg-[#9CAF88] text-white font-semibold rounded-xl hover:bg-[#8a9e77] transition-colors flex items-center justify-center gap-3"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Continue with Email
+              </button>
+
+              <button
+                onClick={() => { setAuthMethod('phone'); setStep(STEPS.PHONE); }}
+                className="w-full py-4 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center gap-3 border border-white/20"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                Continue with Phone
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === STEPS.EMAIL && (
+          <div className="space-y-6 animate-fade-in">
+            <div>
+              <h1 className="text-2xl font-bold text-white mb-2">
+                {isSignUp ? 'Create your account' : 'Welcome back'}
+              </h1>
+              <p className="text-white/70">
+                {isSignUp ? 'Enter your email and create a password' : 'Sign in with your email and password'}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                className="w-full px-4 py-3 bg-white/10 rounded-xl border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-white/40"
+                autoComplete="email"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password (min 6 characters)"
+                className="w-full px-4 py-3 bg-white/10 rounded-xl border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-white/40"
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                onKeyDown={(e) => e.key === 'Enter' && handleEmailAuth()}
+              />
+            </div>
+
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+
+            <button
+              onClick={handleEmailAuth}
+              disabled={isLoading || !email || password.length < 6}
+              className="w-full py-4 bg-[#9CAF88] text-white font-semibold rounded-xl hover:bg-[#8a9e77] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In')}
+            </button>
+
+            <div className="text-center space-y-3">
+              <button
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-white/70 hover:text-white transition-colors text-sm"
+              >
+                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              </button>
+              <button
+                onClick={() => setStep(STEPS.AUTH_METHOD)}
+                className="block w-full text-white/50 hover:text-white transition-colors text-sm"
+              >
+                ← Back to options
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === STEPS.EMAIL_SENT && (
+          <div className="space-y-6 animate-fade-in text-center">
+            <div className="text-6xl">📧</div>
+            <div>
+              <h1 className="text-2xl font-bold text-white mb-2">Check your email</h1>
+              <p className="text-white/70">
+                We sent a confirmation link to <span className="text-white">{email}</span>
+              </p>
+            </div>
+            <p className="text-white/50 text-sm">
+              Click the link in your email to confirm your account, then come back here.
+            </p>
+            <button
+              onClick={() => setStep(STEPS.AUTH_METHOD)}
+              className="w-full py-3 text-white/70 hover:text-white transition-colors"
+            >
+              ← Try a different method
+            </button>
+          </div>
+        )}
+
         {step === STEPS.PHONE && (
           <div className="space-y-6 animate-fade-in">
             <div>
@@ -312,6 +492,13 @@ export default function OnboardingFlow() {
               className="w-full py-4 bg-[#9CAF88] text-white font-semibold rounded-xl hover:bg-[#8a9e77] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Sending...' : 'Continue'}
+            </button>
+
+            <button
+              onClick={() => setStep(STEPS.AUTH_METHOD)}
+              className="w-full py-2 text-white/50 hover:text-white transition-colors text-sm"
+            >
+              ← Back to options
             </button>
           </div>
         )}

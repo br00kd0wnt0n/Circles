@@ -1,6 +1,21 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import authApi from '../services/authApi';
-import householdsApi from '../services/householdsApi';
+import {
+  supabase,
+  isSupabaseConfigured,
+  signInWithPhone as supabaseSignIn,
+  verifyOtp as supabaseVerifyOtp,
+  signInWithEmail as supabaseSignInEmail,
+  signUpWithEmail as supabaseSignUpEmail,
+  signInWithMagicLink as supabaseMagicLink,
+  signOut as supabaseSignOut,
+  getSession,
+  getUser,
+  getMyHousehold,
+  createHousehold as supabaseCreateHousehold,
+  updateHousehold as supabaseUpdateHousehold,
+  onAuthStateChange
+} from '../lib/supabase';
+import { statusService } from '../services/supabaseService';
 
 const AuthContext = createContext(null);
 
@@ -11,90 +26,119 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-  // Check auth state on mount
+  // Initialize auth state on mount
   useEffect(() => {
-    checkAuth();
-
-    // Listen for logout events from API client
-    const handleLogout = () => {
-      setUser(null);
-      setHousehold(null);
-      setIsAuthenticated(false);
-    };
-
-    window.addEventListener('auth:logout', handleLogout);
-    return () => window.removeEventListener('auth:logout', handleLogout);
-  }, []);
-
-  const checkAuth = async () => {
-    if (!authApi.isAuthenticated()) {
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase not configured - running in demo mode');
       setIsLoading(false);
       return;
     }
 
-    try {
-      const response = await authApi.getCurrentUser();
-      setUser(response.user);
-      setIsAuthenticated(true);
+    // Check initial session
+    initAuth();
 
-      if (response.hasHousehold) {
-        const householdData = await householdsApi.getMyHousehold();
+    // Subscribe to auth state changes
+    const { data: { subscription } } = onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+
+      if (event === 'SIGNED_IN' && session) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+        await loadHousehold();
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setHousehold(null);
+        setIsAuthenticated(false);
+        setNeedsOnboarding(false);
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        setUser(session.user);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  const initAuth = async () => {
+    try {
+      const session = await getSession();
+
+      if (session) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+        await loadHousehold();
+      }
+    } catch (error) {
+      console.error('Auth init failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadHousehold = async () => {
+    try {
+      const householdData = await getMyHousehold();
+      if (householdData) {
         setHousehold(householdData);
         setNeedsOnboarding(false);
       } else {
         setNeedsOnboarding(true);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
+      console.error('Failed to load household:', error);
+      setNeedsOnboarding(true);
     }
   };
 
   const requestOtp = useCallback(async (phone) => {
-    return authApi.requestOtp(phone);
+    return supabaseSignIn(phone);
   }, []);
 
   const verifyOtp = useCallback(async (phone, code) => {
-    const response = await authApi.verifyOtp(phone, code);
-    setUser(response.user);
-    setIsAuthenticated(true);
+    const data = await supabaseVerifyOtp(phone, code);
+    // Auth state change listener will handle setting user/household
+    return data;
+  }, []);
 
-    if (response.hasHousehold) {
-      const householdData = await householdsApi.getMyHousehold();
-      setHousehold(householdData);
-      setNeedsOnboarding(false);
-    } else {
-      setNeedsOnboarding(true);
-    }
+  // Email auth methods
+  const signInEmail = useCallback(async (email, password) => {
+    const data = await supabaseSignInEmail(email, password);
+    // Auth state change listener will handle setting user/household
+    return data;
+  }, []);
 
-    return response;
+  const signUpEmail = useCallback(async (email, password) => {
+    const data = await supabaseSignUpEmail(email, password);
+    // Auth state change listener will handle setting user/household
+    return data;
+  }, []);
+
+  const sendMagicLink = useCallback(async (email) => {
+    const data = await supabaseMagicLink(email);
+    return data;
   }, []);
 
   const logout = useCallback(async () => {
-    await authApi.logout();
-    setUser(null);
-    setHousehold(null);
-    setIsAuthenticated(false);
-    setNeedsOnboarding(false);
+    await supabaseSignOut();
+    // Auth state change listener will handle clearing state
   }, []);
 
   const createHousehold = useCallback(async (data) => {
-    const newHousehold = await householdsApi.create(data);
+    const newHousehold = await supabaseCreateHousehold(data);
     setHousehold(newHousehold);
     setNeedsOnboarding(false);
     return newHousehold;
   }, []);
 
   const updateHousehold = useCallback(async (data) => {
-    const updated = await householdsApi.update(data);
+    const updated = await supabaseUpdateHousehold(data);
     setHousehold(updated);
     return updated;
   }, []);
 
   const updateStatus = useCallback(async (status) => {
-    const updated = await householdsApi.updateStatus(status);
+    const updated = await statusService.update(status);
     setHousehold(prev => ({
       ...prev,
       status: updated
@@ -108,13 +152,19 @@ export function AuthProvider({ children }) {
     isLoading,
     isAuthenticated,
     needsOnboarding,
+    // Phone auth
     requestOtp,
     verifyOtp,
+    // Email auth
+    signInEmail,
+    signUpEmail,
+    sendMagicLink,
+    // General
     logout,
     createHousehold,
     updateHousehold,
     updateStatus,
-    refreshHousehold: checkAuth
+    refreshHousehold: loadHousehold
   };
 
   return (

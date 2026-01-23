@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { BottomNav } from './components/ui/BottomNav';
 import { UnifiedHomeCircles } from './components/home/UnifiedHomeCircles';
 import { ActivityScreen } from './components/activity/ActivityScreen';

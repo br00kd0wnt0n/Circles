@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Plus, UserPlus, Phone, MessageCircle, MoreVertical, Trash2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';

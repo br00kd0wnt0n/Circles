@@ -1,12 +1,14 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import contactsApi from '../services/contactsApi';
-import circlesApi from '../services/circlesApi';
-import invitesApi from '../services/invitesApi';
-import offersApi from '../services/offersApi';
-import eventsApi from '../services/eventsApi';
-import statusApi from '../services/statusApi';
-import { useSocket, useStatusUpdates, useInviteUpdates } from '../hooks/useSocket';
+import {
+  contactsService,
+  circlesService,
+  invitesService,
+  statusService,
+  offersService,
+  eventsService
+} from '../services/supabaseService';
+import { subscribeToStatusUpdates, subscribeToInvites, isSupabaseConfigured } from '../lib/supabase';
 
 // Import seed data as fallback for demo mode
 import { currentHousehold as seedHousehold, friendHouseholds, circles as seedCircles } from '../data/seedData';
@@ -43,8 +45,10 @@ export function DataProvider({ children }) {
     timeWindow: household?.status?.timeWindow || ''
   });
 
-  // Socket connection
-  const { isConnected } = useSocket();
+  // Realtime subscription refs
+  const statusSubscription = useRef(null);
+  const inviteSubscription = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Load data on mount or auth change
   useEffect(() => {
@@ -73,7 +77,7 @@ export function DataProvider({ children }) {
     }
   }, [isAuthenticated, needsOnboarding, authHousehold]);
 
-  // Load all data from API
+  // Load all data from Supabase
   const loadAllData = async () => {
     setIsLoading(true);
     setError(null);
@@ -83,11 +87,11 @@ export function DataProvider({ children }) {
 
     try {
       const [contactsData, circlesData, invitesData, offersData, eventsData] = await Promise.all([
-        contactsApi.getAll(),
-        circlesApi.getAll(),
-        invitesApi.getAll(),
-        offersApi.getAll({ zipCode }),
-        eventsApi.getAll({ zipCode })
+        contactsService.getAll(),
+        circlesService.getAll(),
+        invitesService.getAll(),
+        offersService.getAll({ zipCode }),
+        eventsService.getAll({ zipCode })
       ]);
 
       setContacts(contactsData);
@@ -152,8 +156,8 @@ export function DataProvider({ children }) {
   const loadPublicData = async () => {
     try {
       const [offersData, eventsData] = await Promise.all([
-        offersApi.getAll(),
-        eventsApi.getAll()
+        offersService.getAll(),
+        eventsService.getAll()
       ]);
       setOffers(offersData);
       setEvents(eventsData);
@@ -165,59 +169,65 @@ export function DataProvider({ children }) {
     }
   };
 
-  // Real-time status updates
-  useStatusUpdates(useCallback((update) => {
-    setContacts(prev => prev.map(contact =>
-      contact.linkedHouseholdId === update.householdId
-        ? { ...contact, status: update.status }
-        : contact
-    ));
-  }, []));
+  // Set up Supabase realtime subscriptions
+  useEffect(() => {
+    if (demoMode || !isSupabaseConfigured() || !authHousehold) {
+      return;
+    }
 
-  // Real-time invite updates
-  useInviteUpdates(
-    useCallback((newInvite) => {
-      if (demoMode) {
-        setDemoInvites(prev => [...prev, {
-          id: newInvite.invite.id,
-          type: 'received',
-          ...newInvite.invite,
-          creator: newInvite.from,
-          myResponse: 'pending'
-        }]);
-      } else {
-        setInvites(prev => ({
-          ...prev,
-          received: [...prev.received, newInvite]
-        }));
-      }
-    }, [demoMode]),
-    useCallback((response) => {
+    // Get household IDs from contacts to subscribe to their status updates
+    const linkedHouseholdIds = contacts
+      .filter(c => c.linkedHouseholdId)
+      .map(c => c.linkedHouseholdId);
+
+    if (linkedHouseholdIds.length > 0) {
+      // Subscribe to status updates for contacts
+      statusSubscription.current = subscribeToStatusUpdates(linkedHouseholdIds, (update) => {
+        setContacts(prev => prev.map(contact =>
+          contact.linkedHouseholdId === update.householdId
+            ? { ...contact, status: update.status }
+            : contact
+        ));
+      });
+      setIsConnected(true);
+    }
+
+    // Subscribe to new invites
+    inviteSubscription.current = subscribeToInvites(authHousehold.id, (newInvite) => {
       setInvites(prev => ({
         ...prev,
-        sent: prev.sent.map(inv =>
-          inv.id === response.inviteId
-            ? {
-                ...inv,
-                recipients: inv.recipients?.map(r =>
-                  r.householdId === response.householdId || r.household_id === response.householdId
-                    ? { ...r, response: response.response }
-                    : r
-                )
-              }
-            : inv
-        )
+        received: [...prev.received, {
+          id: newInvite.invite.id,
+          type: 'received',
+          activityName: newInvite.invite.activity_name,
+          activityType: newInvite.invite.activity_type,
+          proposedDate: newInvite.invite.proposed_date,
+          proposedTime: newInvite.invite.proposed_time,
+          location: newInvite.invite.location,
+          message: newInvite.invite.message,
+          status: newInvite.invite.status,
+          createdAt: newInvite.invite.created_at,
+          myResponse: 'pending',
+          creator: newInvite.from
+        }]
       }));
-    }, [])
-  );
+    });
+
+    return () => {
+      // Cleanup subscriptions
+      statusSubscription.current?.unsubscribe();
+      inviteSubscription.current?.unsubscribe();
+      setIsConnected(false);
+    };
+  }, [demoMode, authHousehold?.id, contacts.map(c => c.linkedHouseholdId).join(',')]);
 
   // Update my status
   const setMyStatus = useCallback(async (newStatus) => {
     setMyStatusState(newStatus);
 
-    if (!demoMode) {
+    if (!demoMode && isSupabaseConfigured()) {
       try {
-        await statusApi.update(newStatus);
+        await statusService.update(newStatus);
       } catch (err) {
         console.error('Failed to update status:', err);
       }
@@ -242,7 +252,7 @@ export function DataProvider({ children }) {
     }
 
     try {
-      const created = await invitesApi.create(inviteData);
+      const created = await invitesService.create(inviteData);
       setInvites(prev => ({
         ...prev,
         sent: [...prev.sent, created]
@@ -264,7 +274,7 @@ export function DataProvider({ children }) {
     }
 
     try {
-      await invitesApi.respond(inviteId, response);
+      await invitesService.respond(inviteId, response);
       setInvites(prev => ({
         ...prev,
         received: prev.received.map(inv =>
@@ -293,7 +303,7 @@ export function DataProvider({ children }) {
     }
 
     try {
-      const created = await contactsApi.create({
+      const created = await contactsService.create({
         displayName: contactData.name || contactData.displayName,
         phone: contactData.phone || undefined
       });
@@ -319,7 +329,7 @@ export function DataProvider({ children }) {
     }
 
     try {
-      const created = await circlesApi.create(circleData);
+      const created = await circlesService.create(circleData);
       setCircles(prev => [...prev, created]);
       return created;
     } catch (err) {
@@ -338,13 +348,13 @@ export function DataProvider({ children }) {
     }
 
     try {
-      const updated = await circlesApi.update(circleId, updates);
+      const updated = await circlesService.update(circleId, updates);
       setCircles(prev => prev.map(c =>
         c.id === circleId ? { ...c, ...updated } : c
       ));
       // If members were updated, refresh contacts
       if (updates.memberIds) {
-        const refreshed = await contactsApi.getAll();
+        const refreshed = await contactsService.getAll();
         setContacts(refreshed);
       }
       return updated;
@@ -366,22 +376,22 @@ export function DataProvider({ children }) {
     try {
       // Handle circle membership updates
       if (updates.addToCircle) {
-        await circlesApi.addMember(updates.addToCircle, contactId);
+        await circlesService.addMember(updates.addToCircle, contactId);
         // Refresh contacts to get updated circle list
-        const refreshed = await contactsApi.getAll();
+        const refreshed = await contactsService.getAll();
         setContacts(refreshed);
         return;
       }
       if (updates.removeFromCircle) {
-        await circlesApi.removeMember(updates.removeFromCircle, contactId);
+        await circlesService.removeMember(updates.removeFromCircle, contactId);
         // Refresh contacts to get updated circle list
-        const refreshed = await contactsApi.getAll();
+        const refreshed = await contactsService.getAll();
         setContacts(refreshed);
         return;
       }
 
       // Regular update
-      const updated = await contactsApi.update(contactId, updates);
+      const updated = await contactsService.update(contactId, updates);
       setContacts(prev => prev.map(c =>
         c.id === contactId ? { ...c, ...updated } : c
       ));
@@ -400,7 +410,7 @@ export function DataProvider({ children }) {
     }
 
     try {
-      await contactsApi.delete(contactId);
+      await contactsService.delete(contactId);
       setContacts(prev => prev.filter(c => c.id !== contactId));
     } catch (err) {
       console.error('Failed to delete contact:', err);

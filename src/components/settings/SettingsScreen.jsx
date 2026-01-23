@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, User, Users, Bell, Palette, HelpCircle, LogOut, Contact, CircleDot, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import householdsApi from '../../services/householdsApi';
+import { membersService } from '../../services/supabaseService';
+import { updateHousehold as supabaseUpdateHousehold } from '../../lib/supabase';
 
 const AVATARS = ['👨', '👩', '👦', '👧', '🧒', '👶', '🐕', '🐈', '🏠'];
 
@@ -27,7 +28,7 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
     if (!household || !householdName.trim()) return;
     setIsSaving(true);
     try {
-      const updated = await householdsApi.update({ name: householdName.trim() });
+      const updated = await supabaseUpdateHousehold({ name: householdName.trim() });
       onUpdateHousehold(updated);
       setEditingName(false);
     } catch (err) {
@@ -48,7 +49,7 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
   const handleSaveMember = async (member) => {
     setIsSaving(true);
     try {
-      await householdsApi.updateMember(member.id, {
+      await membersService.update(member.id, {
         name: member.name,
         role: member.role,
         avatar: member.avatar
@@ -65,7 +66,7 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
     if (!newMember.name.trim()) return;
     setIsSaving(true);
     try {
-      const added = await householdsApi.addMember({
+      const added = await membersService.add({
         name: newMember.name.trim(),
         role: newMember.role,
         avatar: newMember.avatar
@@ -89,7 +90,7 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
 
     setIsSaving(true);
     try {
-      await householdsApi.removeMember(memberId);
+      await membersService.delete(memberId);
       setMembers(prev => prev.filter(m => m.id !== memberId));
     } catch (err) {
       console.error('Failed to delete member:', err);
