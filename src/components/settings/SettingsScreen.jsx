@@ -111,7 +111,7 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm z-40"
             onClick={onClose}
           />
           <motion.div
@@ -119,7 +119,7 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-y-0 right-0 w-full max-w-md z-50 bg-[#FAF9F6] overflow-hidden flex flex-col"
+            className="absolute inset-0 z-50 bg-[#FAF9F6] overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 bg-white border-b border-gray-100">

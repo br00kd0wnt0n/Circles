@@ -20,6 +20,7 @@ const getTimeOfDay = () => {
 const CirclesLogo = ({ size = 60, color, showVenn = true }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <motion.circle
+      initial={{ cx: 12, cy: 12, r: 8 }}
       animate={{
         cx: showVenn ? 9 : 12,
         cy: showVenn ? 10 : 12,
@@ -33,6 +34,7 @@ const CirclesLogo = ({ size = 60, color, showVenn = true }) => (
       strokeLinejoin="round"
     />
     <motion.circle
+      initial={{ cx: 12, cy: 12, r: 8, opacity: 0 }}
       animate={{
         cx: showVenn ? 15 : 12,
         cy: showVenn ? 10 : 12,
@@ -47,6 +49,7 @@ const CirclesLogo = ({ size = 60, color, showVenn = true }) => (
       strokeLinejoin="round"
     />
     <motion.circle
+      initial={{ cx: 12, cy: 12, r: 8, opacity: 0 }}
       animate={{
         cx: showVenn ? 12 : 12,
         cy: showVenn ? 15 : 12,

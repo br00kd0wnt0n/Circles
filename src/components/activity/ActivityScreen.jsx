@@ -15,11 +15,16 @@ export function ActivityScreen({ invites, onRespond }) {
   const isDark = themeId === 'midnight';
   const [activeTab, setActiveTab] = useState('all');
 
+  // Normalize invites - handle both object { sent, received } and array formats
+  const sentInvites = Array.isArray(invites) ? invites : (invites?.sent || []);
+  const receivedInvites = Array.isArray(invites) ? [] : (invites?.received || []);
+  const allInvites = [...sentInvites.map(i => ({ ...i, type: 'sent' })), ...receivedInvites.map(i => ({ ...i, type: 'received' }))];
+
   // Filter invites based on tab
-  const filteredInvites = invites.filter(invite => {
+  const filteredInvites = allInvites.filter(invite => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'sent') return invite.createdBy === 'howard' || !invite.createdBy;
-    if (activeTab === 'received') return invite.createdBy && invite.createdBy !== 'howard';
+    if (activeTab === 'sent') return invite.type === 'sent';
+    if (activeTab === 'received') return invite.type === 'received';
     return true;
   });
 
@@ -32,9 +37,9 @@ export function ActivityScreen({ invites, onRespond }) {
       <header className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: theme.textPrimary }}>Activity</h1>
         <p className="text-sm mt-1" style={{ color: theme.textSecondary }}>
-          {invites.length === 0
+          {allInvites.length === 0
             ? 'No hangouts yet - create one to get started!'
-            : `${invites.length} hangout${invites.length === 1 ? '' : 's'}`}
+            : `${allInvites.length} hangout${allInvites.length === 1 ? '' : 's'}`}
         </p>
       </header>
 
@@ -42,9 +47,9 @@ export function ActivityScreen({ invites, onRespond }) {
       <div className="flex gap-2 mb-6 overflow-x-auto hide-scrollbar">
         {tabs.map(tab => {
           const Icon = tab.icon;
-          const count = tab.id === 'all' ? invites.length :
-                        tab.id === 'sent' ? invites.filter(i => i.createdBy === 'howard' || !i.createdBy).length :
-                        invites.filter(i => i.createdBy && i.createdBy !== 'howard').length;
+          const count = tab.id === 'all' ? allInvites.length :
+                        tab.id === 'sent' ? sentInvites.length :
+                        receivedInvites.length;
           const isActive = activeTab === tab.id;
 
           return (

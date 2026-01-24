@@ -483,9 +483,38 @@ export function UnifiedHomeCircles({
       </motion.div>
       )}
 
+      {/* Circle Legend - shows user circles when not in demo mode */}
+      {!demoMode && circles.length > 0 && liveHouseholds.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: introRevealed ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.25 }}
+          className="flex-shrink-0 flex items-center gap-2 px-4 mb-2 overflow-x-auto"
+        >
+          <span className="text-xs font-medium flex-shrink-0" style={{ color: theme.textSecondary }}>
+            Circles:
+          </span>
+          {circles.map(circle => {
+            const memberCount = liveHouseholds.filter(h => h.circleIds?.includes(circle.id)).length;
+            return (
+              <button
+                key={circle.id}
+                onClick={() => setSelectedCircle(circle.id)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80 flex-shrink-0"
+                style={{ backgroundColor: `${circle.color}20`, color: circle.color }}
+              >
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: circle.color }} />
+                {circle.name}
+                <span className="opacity-70">({memberCount})</span>
+              </button>
+            );
+          })}
+        </motion.div>
+      )}
+
       {/* Contacts area with circle outlines */}
-      <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-visible px-4 -mt-4">
-        <div className="relative w-full aspect-square max-w-[340px] max-h-[85%]">
+      <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-visible -mt-4">
+        <div className="relative aspect-square max-w-[340px] max-h-[85%] mx-auto" style={{ width: 'min(100% - 32px, 340px)' }}>
           {/* Empty State - No Friends */}
           {liveHouseholds.length === 0 && introRevealed && (
             <motion.div
@@ -726,6 +755,29 @@ export function UnifiedHomeCircles({
               >
                 {getShortName(household.householdName)}
               </motion.span>
+
+              {/* Circle membership indicators (for user circles) */}
+              {!demoMode && household.circleIds?.length > 0 && (
+                <div className="absolute left-1/2 -translate-x-1/2 mt-7 flex gap-0.5">
+                  {household.circleIds.slice(0, 3).map(circleId => {
+                    const circle = circles.find(c => c.id === circleId);
+                    if (!circle) return null;
+                    return (
+                      <div
+                        key={circleId}
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: circle.color }}
+                        title={circle.name}
+                      />
+                    );
+                  })}
+                  {household.circleIds.length > 3 && (
+                    <span className="text-[8px] ml-0.5" style={{ color: theme.textSecondary }}>
+                      +{household.circleIds.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
             </motion.div>
           );
         })}
@@ -752,14 +804,14 @@ export function UnifiedHomeCircles({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4, ease: 'easeInOut' }}
           >
-            {/* Expanding Circle Background - zooms from circle position */}
+            {/* Expanding Circle Background - zooms from center for user circles, or circle position for demo */}
             <motion.div
               className="absolute rounded-full"
               style={{
                 backgroundColor: selectedCircleData.color,
-                // Start from the circle's approximate position in the container
-                left: `${circleLayout[selectedCircle]?.cx || 50}%`,
-                top: `${(circleLayout[selectedCircle]?.cy || 50) * 0.6 + 15}%`,
+                // For demo circles use their position, for user circles zoom from center
+                left: circleLayout[selectedCircle]?.cx ? `${circleLayout[selectedCircle].cx}%` : '50%',
+                top: circleLayout[selectedCircle]?.cy ? `${circleLayout[selectedCircle].cy * 0.6 + 15}%` : '40%',
                 transformOrigin: 'center center',
               }}
               initial={{

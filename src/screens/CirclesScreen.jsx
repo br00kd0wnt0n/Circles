@@ -11,7 +11,7 @@ const CIRCLE_COLORS = [
 
 export function CirclesScreen({ isOpen, onClose }) {
   const { themeId } = useTheme();
-  const { circles, friendHouseholds, addCircle, updateCircle } = useData();
+  const { circles, friendHouseholds, addCircle, updateCircle, refresh } = useData();
   const isDark = themeId === 'midnight';
 
   const [showCreateCircle, setShowCreateCircle] = useState(false);
@@ -35,7 +35,7 @@ export function CirclesScreen({ isOpen, onClose }) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50"
+      className="absolute inset-0 z-50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -184,6 +184,10 @@ export function CirclesScreen({ isOpen, onClose }) {
           <EditCircleModal
             circle={editingCircle}
             onClose={() => setEditingCircle(null)}
+            onSave={() => {
+              setEditingCircle(null);
+              refresh();
+            }}
             isDark={isDark}
             friendHouseholds={friendHouseholds}
             onUpdateCircle={updateCircle}
@@ -216,7 +220,7 @@ function CreateCircleModal({ onClose, isDark, existingColors, onAddCircle }) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-60 flex items-center justify-center p-4"
+      className="absolute inset-0 z-60 flex items-center justify-center p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -298,7 +302,7 @@ function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds }
 
   return (
     <motion.div
-      className="fixed inset-0 z-60 flex items-end justify-center"
+      className="absolute inset-0 z-60 flex items-end justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -389,6 +393,7 @@ function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds }
             <span className={isDark ? 'text-white' : 'text-gray-700'}>Edit Circle</span>
           </button>
           <button
+            onClick={onEdit}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#9CAF88] text-white"
           >
             <Users className="w-5 h-5" />
@@ -406,14 +411,18 @@ function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds }
   );
 }
 
-function EditCircleModal({ circle, onClose, isDark, friendHouseholds, onUpdateCircle }) {
+function EditCircleModal({ circle, onClose, onSave, isDark, friendHouseholds, onUpdateCircle }) {
   const safeHouseholds = friendHouseholds || [];
   const [name, setName] = useState(circle.name);
   const [selectedColor, setSelectedColor] = useState(circle.color);
-  const [selectedMembers, setSelectedMembers] = useState(
-    safeHouseholds.filter(h => h.circleIds?.includes(circle.id)).map(h => h.id)
-  );
   const [isSaving, setIsSaving] = useState(false);
+
+  // Track original members to calculate adds/removes
+  const originalMembers = useMemo(() =>
+    safeHouseholds.filter(h => h.circleIds?.includes(circle.id)).map(h => h.id),
+    [safeHouseholds, circle.id]
+  );
+  const [selectedMembers, setSelectedMembers] = useState(originalMembers);
 
   const toggleMember = (memberId) => {
     setSelectedMembers(prev =>
@@ -427,14 +436,19 @@ function EditCircleModal({ circle, onClose, isDark, friendHouseholds, onUpdateCi
     if (!name.trim()) return;
     setIsSaving(true);
     try {
+      // Use the updateCircle from DataContext which handles the Supabase calls
       await onUpdateCircle(circle.id, {
         name: name.trim(),
         color: selectedColor,
         memberIds: selectedMembers
       });
-      onClose();
-    } catch {
-      // Error already logged in DataContext
+      if (onSave) {
+        onSave();
+      } else {
+        onClose();
+      }
+    } catch (err) {
+      console.error('Failed to update circle:', err);
     } finally {
       setIsSaving(false);
     }
@@ -442,7 +456,7 @@ function EditCircleModal({ circle, onClose, isDark, friendHouseholds, onUpdateCi
 
   return (
     <motion.div
-      className="fixed inset-0 z-60 flex items-end justify-center"
+      className="absolute inset-0 z-60 flex items-end justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

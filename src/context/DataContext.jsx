@@ -122,7 +122,8 @@ export function DataProvider({ children }) {
       linkedHouseholdId: h.id,
       householdName: h.householdName,
       status: h.status,
-      circles: []
+      circles: [],
+      members: h.members || [] // Preserve the original members array
     }));
 
     // Assign contacts to circles based on seedCircles
@@ -466,12 +467,15 @@ export function DataProvider({ children }) {
     friendHouseholds: (contacts || []).map(contact => ({
           id: contact.id,
           householdName: contact.displayName || contact.householdName || 'Unknown',
-          members: [{
-            id: contact.id,
-            name: contact.displayName || 'Unknown',
-            avatar: contact.avatar || '👤',
-            role: 'parent'
-          }],
+          // Use original members if available (demo mode), otherwise create single member
+          members: contact.members && contact.members.length > 0
+            ? contact.members
+            : [{
+                id: contact.id,
+                name: contact.displayName || 'Unknown',
+                avatar: contact.avatar || '👤',
+                role: 'parent'
+              }],
           status: contact.status || { state: 'available', note: null, timeWindow: null },
           circleIds: (contact.circles || []).map(c => c.id),
           // Keep original contact data for reference
