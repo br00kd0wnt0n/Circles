@@ -463,9 +463,13 @@ export function DataProvider({ children }) {
     myHousehold: household,
     updateHousehold: authUpdateHousehold,
     // Transform contacts to match friendHouseholds shape for the UI
-    // Use consistent transformation for both demo and API mode
+    // Use linkedHouseholdId as the id when available (for circle membership)
+    // Fall back to contact.id for display purposes
     friendHouseholds: (contacts || []).map(contact => ({
-          id: contact.id,
+          // Use linkedHouseholdId for app users (needed for circle_members table)
+          // Fall back to contact.id for non-app-user contacts
+          id: contact.linkedHouseholdId || contact.id,
+          contactId: contact.id, // Keep original contact ID for reference
           householdName: contact.displayName || contact.householdName || 'Unknown',
           // Use original members if available (demo mode), otherwise create single member
           members: contact.members && contact.members.length > 0

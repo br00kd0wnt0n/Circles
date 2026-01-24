@@ -524,7 +524,7 @@ export const invitesService = {
 
 export const statusService = {
   /**
-   * Update my household's status
+   * Update my household's status (upsert - creates if doesn't exist)
    */
   async update({ state, note, timeWindow }) {
     if (!supabase) throw new Error('Supabase not configured');
@@ -532,14 +532,17 @@ export const statusService = {
     const household = await getMyHousehold();
     if (!household) throw new Error('No household found');
 
+    // Use upsert to create the row if it doesn't exist
     const { data, error } = await supabase
       .from('household_status')
-      .update({
+      .upsert({
+        household_id: household.id,
         state,
         note,
         time_window: timeWindow
+      }, {
+        onConflict: 'household_id'
       })
-      .eq('household_id', household.id)
       .select()
       .single();
 
