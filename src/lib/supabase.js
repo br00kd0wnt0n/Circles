@@ -242,8 +242,7 @@ export async function createHousehold({ name, zipCode, members = [] }) {
       name: m.name,
       role: m.role || 'adult',
       avatar: m.avatar || '👤',
-      is_primary: index === 0,
-      user_id: index === 0 ? user.id : null
+      is_primary: index === 0
     }));
 
     const { error: membersError } = await supabase
