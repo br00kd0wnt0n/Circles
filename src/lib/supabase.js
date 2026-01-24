@@ -199,7 +199,8 @@ export async function getMyHousehold() {
   const household = data.households;
   return {
     id: household.id,
-    name: household.name,
+    householdName: household.name,
+    name: household.name, // Keep for backwards compatibility
     zipCode: household.zip_code,
     status: household.household_status?.[0] || { state: 'available', note: null, timeWindow: null },
     members: household.household_members || []
