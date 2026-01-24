@@ -1,7 +1,7 @@
 // Circles Service Worker
 // Handles caching, offline support, and push notifications
 
-const CACHE_NAME = 'circles-v1';
+const CACHE_NAME = 'circles-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache on install
