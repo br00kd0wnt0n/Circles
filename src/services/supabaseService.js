@@ -36,13 +36,6 @@ export const contactsService = {
             time_window,
             updated_at
           )
-        ),
-        circle_members (
-          circles (
-            id,
-            name,
-            color
-          )
         )
       `)
       .eq('owner_household_id', household.id)
@@ -50,18 +43,46 @@ export const contactsService = {
 
     if (error) throw error;
 
+    // Get circle memberships for contacts with linked households
+    const linkedHouseholdIds = (data || [])
+      .filter(c => c.linked_household_id)
+      .map(c => c.linked_household_id);
+
+    let circleMemberships = [];
+    if (linkedHouseholdIds.length > 0) {
+      const { data: cmData } = await supabase
+        .from('circle_members')
+        .select(`
+          household_id,
+          circles (
+            id,
+            name,
+            color
+          )
+        `)
+        .in('household_id', linkedHouseholdIds);
+      circleMemberships = cmData || [];
+    }
+
     // Transform to match existing frontend format
-    return (data || []).map(contact => ({
-      id: contact.id,
-      displayName: contact.display_name,
-      phone: contact.phone,
-      avatar: contact.avatar,
-      isAppUser: contact.is_app_user,
-      linkedHouseholdId: contact.linked_household_id,
-      householdName: contact.linked_household?.name,
-      status: contact.linked_household?.household_status?.[0] || null,
-      circles: (contact.circle_members || []).map(cm => cm.circles).filter(Boolean)
-    }));
+    return (data || []).map(contact => {
+      const contactCircles = circleMemberships
+        .filter(cm => cm.household_id === contact.linked_household_id)
+        .map(cm => cm.circles)
+        .filter(Boolean);
+
+      return {
+        id: contact.id,
+        displayName: contact.display_name,
+        phone: contact.phone,
+        avatar: contact.avatar,
+        isAppUser: contact.is_app_user,
+        linkedHouseholdId: contact.linked_household_id,
+        householdName: contact.linked_household?.name,
+        status: contact.linked_household?.household_status?.[0] || null,
+        circles: contactCircles
+      };
+    });
   },
 
   /**
@@ -73,22 +94,10 @@ export const contactsService = {
     const household = await getMyHousehold();
     if (!household) throw new Error('No household found');
 
-    // Check if phone belongs to an existing household
+    // For now, contacts are created as non-app-users
+    // Linking to existing households would require a separate lookup mechanism
     let linkedHouseholdId = null;
     let isAppUser = false;
-
-    if (phone) {
-      const { data: existingUser } = await supabase
-        .from('households')
-        .select('id')
-        .eq('phone', phone)
-        .single();
-
-      if (existingUser) {
-        linkedHouseholdId = existingUser.id;
-        isAppUser = true;
-      }
-    }
 
     const { data, error } = await supabase
       .from('contacts')
@@ -174,7 +183,7 @@ export const circlesService = {
         color,
         created_at,
         circle_members (
-          contact_id
+          household_id
         )
       `)
       .eq('owner_household_id', household.id)
@@ -188,7 +197,7 @@ export const circlesService = {
       color: circle.color,
       createdAt: circle.created_at,
       memberCount: circle.circle_members?.length || 0,
-      memberIds: (circle.circle_members || []).map(cm => cm.contact_id)
+      memberIds: (circle.circle_members || []).map(cm => cm.household_id)
     }));
   },
 
@@ -248,10 +257,10 @@ export const circlesService = {
       // Get current members
       const { data: currentMembers } = await supabase
         .from('circle_members')
-        .select('contact_id')
+        .select('household_id')
         .eq('circle_id', circleId);
 
-      const currentIds = (currentMembers || []).map(m => m.contact_id);
+      const currentIds = (currentMembers || []).map(m => m.household_id);
       const newIds = updates.memberIds;
 
       // Remove members not in new list
@@ -261,7 +270,7 @@ export const circlesService = {
           .from('circle_members')
           .delete()
           .eq('circle_id', circleId)
-          .in('contact_id', toRemove);
+          .in('household_id', toRemove);
       }
 
       // Add new members
@@ -269,9 +278,9 @@ export const circlesService = {
       if (toAdd.length > 0) {
         await supabase
           .from('circle_members')
-          .insert(toAdd.map(contactId => ({
+          .insert(toAdd.map(householdId => ({
             circle_id: circleId,
-            contact_id: contactId
+            household_id: householdId
           })));
       }
     }
@@ -279,7 +288,7 @@ export const circlesService = {
     // Return updated circle
     const { data } = await supabase
       .from('circles')
-      .select('*, circle_members(contact_id)')
+      .select('*, circle_members(household_id)')
       .eq('id', circleId)
       .single();
 
@@ -288,7 +297,7 @@ export const circlesService = {
       name: data.name,
       color: data.color,
       memberCount: data.circle_members?.length || 0,
-      memberIds: (data.circle_members || []).map(m => m.contact_id)
+      memberIds: (data.circle_members || []).map(m => m.household_id)
     };
   },
 
@@ -307,29 +316,29 @@ export const circlesService = {
   },
 
   /**
-   * Add a contact to a circle
+   * Add a household to a circle
    */
-  async addMember(circleId, contactId) {
+  async addMember(circleId, householdId) {
     if (!supabase) throw new Error('Supabase not configured');
 
     const { error } = await supabase
       .from('circle_members')
-      .insert({ circle_id: circleId, contact_id: contactId });
+      .insert({ circle_id: circleId, household_id: householdId });
 
     if (error && error.code !== '23505') throw error; // Ignore duplicate
   },
 
   /**
-   * Remove a contact from a circle
+   * Remove a household from a circle
    */
-  async removeMember(circleId, contactId) {
+  async removeMember(circleId, householdId) {
     if (!supabase) throw new Error('Supabase not configured');
 
     const { error } = await supabase
       .from('circle_members')
       .delete()
       .eq('circle_id', circleId)
-      .eq('contact_id', contactId);
+      .eq('household_id', householdId);
 
     if (error) throw error;
   }
@@ -354,24 +363,18 @@ export const invitesService = {
       .from('invites')
       .select(`
         id,
-        activity_name,
-        activity_type,
-        proposed_date,
-        proposed_time,
+        activity,
+        date,
+        time,
         location,
         message,
         status,
         created_at,
         invite_recipients (
           id,
-          contact_id,
           household_id,
           response,
-          responded_at,
-          contacts (
-            display_name,
-            avatar
-          )
+          responded_at
         )
       `)
       .eq('creator_household_id', household.id)
@@ -386,10 +389,9 @@ export const invitesService = {
         responded_at,
         invites (
           id,
-          activity_name,
-          activity_type,
-          proposed_date,
-          proposed_time,
+          activity,
+          date,
+          time,
           location,
           message,
           status,
@@ -400,40 +402,34 @@ export const invitesService = {
           )
         )
       `)
-      .eq('household_id', household.id)
-      .order('invites(created_at)', { ascending: false });
+      .eq('household_id', household.id);
 
     // Transform sent invites
     const sent = (sentData || []).map(invite => ({
       id: invite.id,
       type: 'sent',
-      activityName: invite.activity_name,
-      activityType: invite.activity_type,
-      proposedDate: invite.proposed_date,
-      proposedTime: invite.proposed_time,
+      activityName: invite.activity,
+      proposedDate: invite.date,
+      proposedTime: invite.time,
       location: invite.location,
       message: invite.message,
       status: invite.status,
       createdAt: invite.created_at,
       recipients: (invite.invite_recipients || []).map(r => ({
         id: r.id,
-        contactId: r.contact_id,
         householdId: r.household_id,
         response: r.response,
-        respondedAt: r.responded_at,
-        name: r.contacts?.display_name,
-        avatar: r.contacts?.avatar
+        respondedAt: r.responded_at
       }))
     }));
 
     // Transform received invites
-    const received = (receivedData || []).map(r => ({
+    const received = (receivedData || []).filter(r => r.invites).map(r => ({
       id: r.invites.id,
       type: 'received',
-      activityName: r.invites.activity_name,
-      activityType: r.invites.activity_type,
-      proposedDate: r.invites.proposed_date,
-      proposedTime: r.invites.proposed_time,
+      activityName: r.invites.activity,
+      proposedDate: r.invites.date,
+      proposedTime: r.invites.time,
       location: r.invites.location,
       message: r.invites.message,
       status: r.invites.status,
@@ -451,7 +447,7 @@ export const invitesService = {
   /**
    * Create a new invite
    */
-  async create({ contactIds, activityName, activityType, proposedDate, proposedTime, location, message }) {
+  async create({ householdIds, activityName, proposedDate, proposedTime, location, message }) {
     if (!supabase) throw new Error('Supabase not configured');
 
     const household = await getMyHousehold();
@@ -462,10 +458,9 @@ export const invitesService = {
       .from('invites')
       .insert({
         creator_household_id: household.id,
-        activity_name: activityName,
-        activity_type: activityType,
-        proposed_date: proposedDate,
-        proposed_time: proposedTime,
+        activity: activityName,
+        date: proposedDate,
+        time: proposedTime,
         location,
         message
       })
@@ -474,17 +469,10 @@ export const invitesService = {
 
     if (inviteError) throw inviteError;
 
-    // Get contacts with their linked households
-    const { data: contacts } = await supabase
-      .from('contacts')
-      .select('id, linked_household_id')
-      .in('id', contactIds);
-
-    // Add recipients
-    const recipients = (contacts || []).map(c => ({
+    // Add recipients (householdIds directly)
+    const recipients = (householdIds || []).map(householdId => ({
       invite_id: invite.id,
-      contact_id: c.id,
-      household_id: c.linked_household_id
+      household_id: householdId
     }));
 
     if (recipients.length > 0) {
@@ -498,11 +486,10 @@ export const invitesService = {
     return {
       id: invite.id,
       type: 'sent',
-      activityName: invite.activity_name,
+      activityName: invite.activity,
       status: invite.status,
       createdAt: invite.created_at,
       recipients: recipients.map(r => ({
-        contactId: r.contact_id,
         householdId: r.household_id,
         response: 'pending'
       }))
