@@ -190,9 +190,9 @@ export async function getMyHousehold() {
       )
     `)
     .eq('is_primary', true)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+  if (error) throw error;
 
   if (!data) return null;
 
