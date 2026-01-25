@@ -15,6 +15,10 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
   const [hoveredCircle, setHoveredCircle] = useState(null);
   const [selectedCircle, setSelectedCircle] = useState(null);
 
+  // Debug logging
+  console.log('[VennDiagram] circles:', circles?.length, circles?.map(c => ({ id: c.id, name: c.name })));
+  console.log('[VennDiagram] friendHouseholds:', friendHouseholds?.length, friendHouseholds?.map(h => ({ id: h.id, name: h.householdName, circleIds: h.circleIds })));
+
   // Handle circle click - toggle selection
   const handleCircleClick = (circleId) => {
     const newSelected = selectedCircle === circleId ? null : circleId;
@@ -30,7 +34,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
     circles.forEach(c => {
       counts[c.id] = friendHouseholds.filter(h => h.circleIds?.includes(c.id)).length;
     });
-    const maxCount = Math.max(...Object.values(counts));
+    const maxCount = Math.max(...Object.values(counts), 1); // Min 1 to avoid division by zero
     const minSize = 32;
     const maxSize = 40;
 
@@ -40,7 +44,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
       sizes[c.id] = minSize + (maxSize - minSize) * ratio;
     });
     return sizes;
-  }, []);
+  }, [circles, friendHouseholds]);
 
   // Dynamic circle positions based on number of circles and sizes
   const circleLayout = useMemo(() => {
@@ -104,7 +108,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
       zones[zoneKey].push(household);
     });
     return zones;
-  }, []);
+  }, [friendHouseholds]);
 
   // Dynamically build zone layouts based on actual circles
   const zoneLayouts = useMemo(() => {
@@ -208,11 +212,11 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
     return circles.map(circle => {
       const memberCount = friendHouseholds.filter(h => h.circleIds?.includes(circle.id)).length;
       const availableCount = friendHouseholds.filter(h =>
-        h.circleIds?.includes(circle.id) && h.status.state !== 'busy'
+        h.circleIds?.includes(circle.id) && h.status?.state !== 'busy'
       ).length;
       return { ...circle, memberCount, availableCount };
     });
-  }, []);
+  }, [circles, friendHouseholds]);
 
   return (
     <div className="relative w-full aspect-square max-w-[340px] mx-auto">

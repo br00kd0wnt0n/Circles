@@ -418,11 +418,16 @@ function EditCircleModal({ circle, onClose, onSave, isDark, friendHouseholds, on
   const [selectedColor, setSelectedColor] = useState(circle.color);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Debug logging
+  console.log('[EditCircleModal] circle:', circle.id, circle.name);
+  console.log('[EditCircleModal] safeHouseholds:', safeHouseholds.map(h => ({ id: h.id, linkedHouseholdId: h.linkedHouseholdId, name: h.householdName, circleIds: h.circleIds })));
+
   // Track original members to calculate adds/removes
-  const originalMembers = useMemo(() =>
-    safeHouseholds.filter(h => h.circleIds?.includes(circle.id)).map(h => h.id),
-    [safeHouseholds, circle.id]
-  );
+  const originalMembers = useMemo(() => {
+    const members = safeHouseholds.filter(h => h.circleIds?.includes(circle.id)).map(h => h.id);
+    console.log('[EditCircleModal] originalMembers:', members);
+    return members;
+  }, [safeHouseholds, circle.id]);
   const [selectedMembers, setSelectedMembers] = useState(originalMembers);
 
   const toggleMember = (memberId) => {
@@ -436,6 +441,12 @@ function EditCircleModal({ circle, onClose, onSave, isDark, friendHouseholds, on
   const handleSave = async () => {
     if (!name.trim()) return;
     setIsSaving(true);
+    console.log('[EditCircleModal] handleSave called with:', {
+      circleId: circle.id,
+      name: name.trim(),
+      color: selectedColor,
+      memberIds: selectedMembers
+    });
     try {
       // Use the updateCircle from DataContext which handles the Supabase calls
       await onUpdateCircle(circle.id, {
@@ -443,13 +454,14 @@ function EditCircleModal({ circle, onClose, onSave, isDark, friendHouseholds, on
         color: selectedColor,
         memberIds: selectedMembers
       });
+      console.log('[EditCircleModal] updateCircle succeeded');
       if (onSave) {
         onSave();
       } else {
         onClose();
       }
     } catch (err) {
-      console.error('Failed to update circle:', err);
+      console.error('[EditCircleModal] Failed to update circle:', err);
     } finally {
       setIsSaving(false);
     }

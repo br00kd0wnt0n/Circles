@@ -237,6 +237,7 @@ export const circlesService = {
    */
   async update(circleId, updates) {
     if (!supabase) throw new Error('Supabase not configured');
+    console.log('[circlesService.update] called:', { circleId, updates });
 
     // Update circle details
     if (updates.name || updates.color) {
@@ -249,33 +250,49 @@ export const circlesService = {
         .update(updateData)
         .eq('id', circleId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[circlesService.update] circle update error:', error);
+        throw error;
+      }
+      console.log('[circlesService.update] circle details updated');
     }
 
     // Update members if provided
     if (updates.memberIds) {
+      console.log('[circlesService.update] updating members, newIds:', updates.memberIds);
+
       // Get current members
-      const { data: currentMembers } = await supabase
+      const { data: currentMembers, error: fetchError } = await supabase
         .from('circle_members')
         .select('household_id')
         .eq('circle_id', circleId);
 
+      if (fetchError) {
+        console.error('[circlesService.update] fetch current members error:', fetchError);
+      }
+
       const currentIds = (currentMembers || []).map(m => m.household_id);
       const newIds = updates.memberIds;
+      console.log('[circlesService.update] currentIds:', currentIds, 'newIds:', newIds);
 
       // Remove members not in new list
       const toRemove = currentIds.filter(id => !newIds.includes(id));
       if (toRemove.length > 0) {
-        await supabase
+        console.log('[circlesService.update] removing members:', toRemove);
+        const { error: removeError } = await supabase
           .from('circle_members')
           .delete()
           .eq('circle_id', circleId)
           .in('household_id', toRemove);
+        if (removeError) {
+          console.error('[circlesService.update] remove error:', removeError);
+        }
       }
 
       // Add new members
       const toAdd = newIds.filter(id => id && !currentIds.includes(id));
       if (toAdd.length > 0) {
+        console.log('[circlesService.update] adding members:', toAdd);
         const { error } = await supabase
           .from('circle_members')
           .insert(toAdd.map(householdId => ({
@@ -283,7 +300,13 @@ export const circlesService = {
             household_id: householdId
           })));
         // Ignore duplicate key errors (409 conflict)
-        if (error && error.code !== '23505') throw error;
+        if (error && error.code !== '23505') {
+          console.error('[circlesService.update] insert error:', error);
+          throw error;
+        }
+        if (error) {
+          console.log('[circlesService.update] insert duplicate ignored');
+        }
       }
     }
 

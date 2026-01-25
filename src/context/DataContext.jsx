@@ -367,6 +367,7 @@ export function DataProvider({ children }) {
 
   // Update a circle
   const updateCircle = useCallback(async (circleId, updates) => {
+    console.log('[DataContext] updateCircle called:', { circleId, updates, demoMode });
     if (demoMode) {
       setCircles(prev => prev.map(c =>
         c.id === circleId ? { ...c, ...updates } : c
@@ -376,17 +377,20 @@ export function DataProvider({ children }) {
 
     try {
       const updated = await circlesService.update(circleId, updates);
+      console.log('[DataContext] circlesService.update returned:', updated);
       setCircles(prev => prev.map(c =>
         c.id === circleId ? { ...c, ...updated } : c
       ));
       // If members were updated, refresh contacts
       if (updates.memberIds) {
+        console.log('[DataContext] Refreshing contacts after member update');
         const refreshed = await contactsService.getAll();
+        console.log('[DataContext] Refreshed contacts:', refreshed.map(c => ({ id: c.id, name: c.displayName, circles: c.circles?.map(ci => ci.name) })));
         setContacts(refreshed);
       }
       return updated;
     } catch (err) {
-      console.error('Failed to update circle:', err);
+      console.error('[DataContext] Failed to update circle:', err);
       throw err;
     }
   }, [demoMode]);

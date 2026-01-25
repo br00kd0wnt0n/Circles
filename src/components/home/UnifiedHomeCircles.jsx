@@ -7,6 +7,7 @@ import { HouseholdDetail } from './HouseholdDetail';
 import { StatusEditor } from './StatusEditor';
 import { MessageComposer } from '../messaging/MessageComposer';
 import { StatusDot } from '../ui/StatusDot';
+import { VennDiagram } from './VennDiagram';
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
 
@@ -542,102 +543,25 @@ export function UnifiedHomeCircles({
             </motion.div>
           )}
 
-          {/* Circle outlines - only show in circles view when there are friends */}
-          <AnimatePresence>
-            {isVennView && introRevealed && liveHouseholds.length > 0 && (
-              <motion.svg
-                viewBox="-15 -15 130 130"
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                style={{ overflow: 'visible' }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 }}
-              >
-                <defs>
-                  {/* Curved paths for text - positioned outside circles with more offset */}
-                  <path
-                    id="rockAcademyPath"
-                    d={`M ${circleLayout['rock-academy'].cx - circleLayout['rock-academy'].r - 6} ${circleLayout['rock-academy'].cy}
-                        A ${circleLayout['rock-academy'].r + 6} ${circleLayout['rock-academy'].r + 6} 0 0 1
-                        ${circleLayout['rock-academy'].cx} ${circleLayout['rock-academy'].cy - circleLayout['rock-academy'].r - 6}`}
-                    fill="none"
-                  />
-                  <path
-                    id="woodstockPath"
-                    d={`M ${circleLayout['woodstock-elementary'].cx} ${circleLayout['woodstock-elementary'].cy - circleLayout['woodstock-elementary'].r - 6}
-                        A ${circleLayout['woodstock-elementary'].r + 6} ${circleLayout['woodstock-elementary'].r + 6} 0 0 1
-                        ${circleLayout['woodstock-elementary'].cx + circleLayout['woodstock-elementary'].r + 6} ${circleLayout['woodstock-elementary'].cy}`}
-                    fill="none"
-                  />
-                  <path
-                    id="nycFriendsPath"
-                    d={`M ${circleLayout['nyc-friends'].cx - circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r - 1}
-                        A ${circleLayout['nyc-friends'].r - 1} ${circleLayout['nyc-friends'].r - 1} 0 0 0
-                        ${circleLayout['nyc-friends'].cx + circleLayout['nyc-friends'].r * 0.7} ${circleLayout['nyc-friends'].cy + circleLayout['nyc-friends'].r - 1}`}
-                    fill="none"
-                  />
-                </defs>
+          {/* Venn Diagram - shows circles with contacts positioned inside */}
+          {isVennView && introRevealed && liveHouseholds.length > 0 && (
+            <motion.div
+              className="absolute inset-0"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+            >
+              <VennDiagram
+                onSelectHousehold={setSelectedHousehold}
+                selectedHousehold={selectedHousehold}
+                onSelectCircle={(circle) => setSelectedCircle(circle?.id || null)}
+              />
+            </motion.div>
+          )}
 
-                {/* Rock Academy - left circle */}
-                <circle
-                  cx={circleLayout['rock-academy'].cx}
-                  cy={circleLayout['rock-academy'].cy}
-                  r={circleLayout['rock-academy'].r}
-                  fill={`${circleColors['rock-academy']}20`}
-                  stroke={circleColors['rock-academy']}
-                  strokeWidth="0.6"
-                  strokeOpacity="0.5"
-                  style={{ cursor: 'pointer', pointerEvents: 'auto' }}
-                  onClick={() => setSelectedCircle('rock-academy')}
-                />
-                <text fill={circleColors['rock-academy']} fontSize="4" fontWeight="600" opacity="0.9">
-                  <textPath href="#rockAcademyPath" startOffset="50%" textAnchor="middle">
-                    Rock Academy
-                  </textPath>
-                </text>
-
-                {/* Woodstock Elementary - right circle */}
-                <circle
-                  cx={circleLayout['woodstock-elementary'].cx}
-                  cy={circleLayout['woodstock-elementary'].cy}
-                  r={circleLayout['woodstock-elementary'].r}
-                  fill={`${circleColors['woodstock-elementary']}20`}
-                  stroke={circleColors['woodstock-elementary']}
-                  strokeWidth="0.6"
-                  strokeOpacity="0.5"
-                  style={{ cursor: 'pointer', pointerEvents: 'auto' }}
-                  onClick={() => setSelectedCircle('woodstock-elementary')}
-                />
-                <text fill={circleColors['woodstock-elementary']} fontSize="4" fontWeight="600" opacity="0.9">
-                  <textPath href="#woodstockPath" startOffset="50%" textAnchor="middle">
-                    Woodstock
-                  </textPath>
-                </text>
-
-                {/* NYC Friends - bottom circle */}
-                <circle
-                  cx={circleLayout['nyc-friends'].cx}
-                  cy={circleLayout['nyc-friends'].cy}
-                  r={circleLayout['nyc-friends'].r}
-                  fill={`${circleColors['nyc-friends']}20`}
-                  stroke={circleColors['nyc-friends']}
-                  strokeWidth="0.6"
-                  strokeOpacity="0.5"
-                  style={{ cursor: 'pointer', pointerEvents: 'auto' }}
-                  onClick={() => setSelectedCircle('nyc-friends')}
-                />
-                <text fill={circleColors['nyc-friends']} fontSize="4" fontWeight="600" opacity="0.9">
-                  <textPath href="#nycFriendsPath" startOffset="50%" textAnchor="middle">
-                    NYC Friends
-                  </textPath>
-                </text>
-              </motion.svg>
-            )}
-          </AnimatePresence>
-
-          {/* Contact dots */}
-          {liveHouseholds.map((household, index) => {
+          {/* Contact dots - only show in scattered view (not venn view) */}
+          {!isVennView && liveHouseholds.map((household, index) => {
           // Generate symmetrical positions for all contacts
           const symmetricalPos = generateDynamicPosition(index, liveHouseholds.length);
 
