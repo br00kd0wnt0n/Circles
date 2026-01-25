@@ -166,6 +166,13 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
       };
     }
 
+    // Uncircled contacts - position them around the bottom edge
+    layouts[''] = {
+      base: { x: 50, y: 95 },
+      direction: 'horizontal',
+      spacing: 12
+    };
+
     return layouts;
   }, [circles, circleLayout]);
 

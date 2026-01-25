@@ -395,6 +395,26 @@ export function DataProvider({ children }) {
     }
   }, [demoMode]);
 
+  // Delete a circle
+  const deleteCircle = useCallback(async (circleId) => {
+    console.log('[DataContext] deleteCircle called:', circleId);
+    if (demoMode) {
+      setCircles(prev => prev.filter(c => c.id !== circleId));
+      return;
+    }
+
+    try {
+      await circlesService.delete(circleId);
+      setCircles(prev => prev.filter(c => c.id !== circleId));
+      // Refresh contacts to clear circle assignments
+      const refreshed = await contactsService.getAll();
+      setContacts(refreshed);
+    } catch (err) {
+      console.error('[DataContext] Failed to delete circle:', err);
+      throw err;
+    }
+  }, [demoMode]);
+
   // Update a contact
   const updateContact = useCallback(async (contactId, updates) => {
     if (demoMode) {
@@ -406,15 +426,21 @@ export function DataProvider({ children }) {
 
     try {
       // Handle circle membership updates
-      if (updates.addToCircle) {
-        await circlesService.addMember(updates.addToCircle, contactId);
-        // Refresh contacts to get updated circle list
-        const refreshed = await contactsService.getAll();
-        setContacts(refreshed);
-        return;
-      }
-      if (updates.removeFromCircle) {
-        await circlesService.removeMember(updates.removeFromCircle, contactId);
+      if (updates.addToCircle || updates.removeFromCircle) {
+        // Find the contact to get their linkedHouseholdId
+        const contact = contacts.find(c => c.id === contactId);
+        if (!contact?.linkedHouseholdId) {
+          console.error('Cannot add/remove from circle: contact has no linkedHouseholdId', contactId);
+          throw new Error('This contact is not an app user and cannot be added to circles');
+        }
+
+        if (updates.addToCircle) {
+          await circlesService.addMember(updates.addToCircle, contact.linkedHouseholdId);
+        }
+        if (updates.removeFromCircle) {
+          await circlesService.removeMember(updates.removeFromCircle, contact.linkedHouseholdId);
+        }
+
         // Refresh contacts to get updated circle list
         const refreshed = await contactsService.getAll();
         setContacts(refreshed);
@@ -487,6 +513,7 @@ export function DataProvider({ children }) {
     deleteContact,
     addCircle,
     updateCircle,
+    deleteCircle,
     refresh,
 
     // For compatibility with existing useAppState

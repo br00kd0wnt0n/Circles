@@ -11,7 +11,7 @@ const CIRCLE_COLORS = [
 
 export function CirclesScreen({ isOpen, onClose }) {
   const { themeId } = useTheme();
-  const { circles, friendHouseholds, addCircle, updateCircle, refresh } = useData();
+  const { circles, friendHouseholds, addCircle, updateCircle, deleteCircle, refresh } = useData();
   const isDark = themeId === 'midnight';
 
   const [showCreateCircle, setShowCreateCircle] = useState(false);
@@ -172,6 +172,10 @@ export function CirclesScreen({ isOpen, onClose }) {
               setEditingCircle(selectedCircle);
               setSelectedCircle(null);
             }}
+            onDelete={async () => {
+              await deleteCircle(selectedCircle.id);
+              setSelectedCircle(null);
+            }}
             isDark={isDark}
             friendHouseholds={friendHouseholds}
           />
@@ -297,8 +301,21 @@ function CreateCircleModal({ onClose, isDark, existingColors, onAddCircle }) {
   );
 }
 
-function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds }) {
+function CircleDetailModal({ circle, onClose, onEdit, onDelete, isDark, friendHouseholds }) {
   const members = (friendHouseholds || []).filter(h => h.circleIds?.includes(circle.id));
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (window.confirm(`Delete "${circle.name}"? This cannot be undone.`)) {
+      setIsDeleting(true);
+      try {
+        await onDelete();
+      } catch (err) {
+        console.error('Failed to delete circle:', err);
+        setIsDeleting(false);
+      }
+    }
+  };
 
   return (
     <motion.div
@@ -402,9 +419,13 @@ function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds }
         </div>
 
         {/* Delete */}
-        <button className="flex items-center gap-2 text-red-500 mt-4 mx-auto">
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="flex items-center gap-2 text-red-500 mt-4 mx-auto hover:text-red-600 disabled:opacity-50"
+        >
           <Trash2 className="w-4 h-4" />
-          <span className="text-sm">Delete Circle</span>
+          <span className="text-sm">{isDeleting ? 'Deleting...' : 'Delete Circle'}</span>
         </button>
       </motion.div>
     </motion.div>
