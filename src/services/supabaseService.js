@@ -274,14 +274,16 @@ export const circlesService = {
       }
 
       // Add new members
-      const toAdd = newIds.filter(id => !currentIds.includes(id));
+      const toAdd = newIds.filter(id => id && !currentIds.includes(id));
       if (toAdd.length > 0) {
-        await supabase
+        const { error } = await supabase
           .from('circle_members')
           .insert(toAdd.map(householdId => ({
             circle_id: circleId,
             household_id: householdId
           })));
+        // Ignore duplicate key errors (409 conflict)
+        if (error && error.code !== '23505') throw error;
       }
     }
 
