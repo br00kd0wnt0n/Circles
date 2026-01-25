@@ -483,8 +483,8 @@ export function UnifiedHomeCircles({
       </motion.div>
       )}
 
-      {/* Circle Legend - shows user circles when not in demo mode */}
-      {!demoMode && circles.length > 0 && liveHouseholds.length > 0 && (
+      {/* Circle Legend - shows user circles when not in demo mode and not in venn view */}
+      {!demoMode && circles.length > 0 && liveHouseholds.length > 0 && !isVennView && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: introRevealed ? 1 : 0 }}

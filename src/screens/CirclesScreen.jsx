@@ -412,7 +412,8 @@ function CircleDetailModal({ circle, onClose, onEdit, isDark, friendHouseholds }
 }
 
 function EditCircleModal({ circle, onClose, onSave, isDark, friendHouseholds, onUpdateCircle }) {
-  const safeHouseholds = friendHouseholds || [];
+  // Only include contacts that have linkedHouseholdId (app users who can be in circles)
+  const safeHouseholds = (friendHouseholds || []).filter(h => h.linkedHouseholdId);
   const [name, setName] = useState(circle.name);
   const [selectedColor, setSelectedColor] = useState(circle.color);
   const [isSaving, setIsSaving] = useState(false);

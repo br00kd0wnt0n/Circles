@@ -9,10 +9,20 @@ const getZoneKey = (circleIds) => {
   return sorted.join('+');
 };
 
-export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
+export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCircle }) {
   const { circles, friendHouseholds } = useData();
   const [hoveredHousehold, setHoveredHousehold] = useState(null);
   const [hoveredCircle, setHoveredCircle] = useState(null);
+  const [selectedCircle, setSelectedCircle] = useState(null);
+
+  // Handle circle click - toggle selection
+  const handleCircleClick = (circleId) => {
+    const newSelected = selectedCircle === circleId ? null : circleId;
+    setSelectedCircle(newSelected);
+    if (onSelectCircle) {
+      onSelectCircle(newSelected ? circles.find(c => c.id === newSelected) : null);
+    }
+  };
 
   // Calculate circle sizes based on member count
   const circleSizes = useMemo(() => {
@@ -267,27 +277,32 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
           if (!layout) return null;
 
           const isHighlighted = highlightedCircles.includes(circle.id);
+          const isSelected = selectedCircle === circle.id;
+          const isHovered = hoveredCircle === circle.id;
 
           return (
             <motion.circle
               key={circle.id}
               cx={layout.cx || 50}
               cy={layout.cy || 50}
-              r={layout.r || 35}
-              fill={hexToRgba(circle.color, isHighlighted ? 0.3 : 0.2)}
-              stroke={circle.color}
-              strokeWidth={isHighlighted ? 0.8 : 0.5}
-              strokeOpacity={isHighlighted ? 0.6 : 0.35}
+              initial={{ r: layout.r || 35 }}
               animate={{
+                r: isSelected ? (layout.r || 35) * 1.15 : (layout.r || 35),
                 y: [0, -1, 0, 1, 0],
                 x: [0, 0.3, 0, -0.3, 0]
               }}
+              fill={hexToRgba(circle.color, isSelected ? 0.4 : isHighlighted ? 0.3 : 0.2)}
+              stroke={circle.color}
+              strokeWidth={isSelected ? 1.2 : isHighlighted ? 0.8 : 0.5}
+              strokeOpacity={isSelected ? 0.9 : isHighlighted ? 0.6 : 0.35}
               transition={{
+                r: { duration: 0.3, ease: "easeOut" },
                 y: { duration: 5 + index, repeat: Infinity, ease: "easeInOut" },
                 x: { duration: 6 + index, repeat: Infinity, ease: "easeInOut" }
               }}
               onMouseEnter={() => setHoveredCircle(circle.id)}
               onMouseLeave={() => setHoveredCircle(null)}
+              onClick={() => handleCircleClick(circle.id)}
               style={{ cursor: 'pointer' }}
             />
           );
@@ -465,9 +480,9 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
         )}
       </AnimatePresence>
 
-      {/* Circle hover tooltip */}
+      {/* Circle hover tooltip - only show when not selected */}
       <AnimatePresence>
-        {hoveredCircle && !hoveredHousehold && (
+        {hoveredCircle && !hoveredHousehold && !selectedCircle && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -488,6 +503,71 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold }) {
                     <p className="text-sm font-medium text-[#1F2937]">{circle?.name}</p>
                     <p className="text-xs text-[#6B7280]">{available} of {members.length} available</p>
                   </div>
+                </div>
+              );
+            })()}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Selected circle panel */}
+      <AnimatePresence>
+        {selectedCircle && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-4 py-3 rounded-t-2xl shadow-lg border-t border-gray-100 z-50"
+          >
+            {(() => {
+              const circle = circles.find(c => c.id === selectedCircle);
+              const members = friendHouseholds.filter(h => h.circleIds?.includes(selectedCircle));
+              const available = members.filter(m => m.status.state !== 'busy');
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: circle?.color }}
+                      />
+                      <h3 className="font-semibold text-[#1F2937]">{circle?.name}</h3>
+                      <span className="text-xs text-[#6B7280]">({members.length} members)</span>
+                    </div>
+                    <button
+                      onClick={() => handleCircleClick(selectedCircle)}
+                      className="text-xs text-[#6B7280] hover:text-[#1F2937]"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {members.map(member => (
+                      <button
+                        key={member.id}
+                        onClick={() => onSelectHousehold(member)}
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0"
+                      >
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-lg">
+                            {member.members?.[0]?.avatar || '👤'}
+                          </div>
+                          <StatusDot status={member.status?.state} size="sm" className="absolute -bottom-0.5 -right-0.5" />
+                        </div>
+                        <span className="text-xs text-[#1F2937] font-medium max-w-[60px] truncate">
+                          {member.householdName?.replace(/^The\s+/i, '').split(' ')[0]}
+                        </span>
+                      </button>
+                    ))}
+                    {members.length === 0 && (
+                      <p className="text-sm text-[#6B7280] py-2">No members in this circle yet</p>
+                    )}
+                  </div>
+                  {available.length > 0 && (
+                    <p className="text-xs text-green-600 mt-2">
+                      {available.length} available to hang out
+                    </p>
+                  )}
                 </div>
               );
             })()}
