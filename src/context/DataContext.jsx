@@ -17,6 +17,10 @@ import { currentHousehold as seedHousehold, friendHouseholds, circles as seedCir
 // Default to true for backwards compatibility
 const DEMO_MODE_ENABLED = import.meta.env.VITE_DEMO_MODE !== 'false';
 
+// Debug logging
+console.log('[DataContext] VITE_DEMO_MODE:', import.meta.env.VITE_DEMO_MODE);
+console.log('[DataContext] DEMO_MODE_ENABLED:', DEMO_MODE_ENABLED);
+
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
@@ -52,22 +56,28 @@ export function DataProvider({ children }) {
 
   // Load data on mount or auth change
   useEffect(() => {
+    console.log('[DataContext] Auth state:', { isAuthenticated, needsOnboarding, hasHousehold: !!authHousehold });
+
     if (isAuthenticated && !needsOnboarding && authHousehold) {
       // User is authenticated and has a household - load real data
+      console.log('[DataContext] Loading real data (authenticated with household)');
       setDemoMode(false);
       loadAllData();
     } else if (isAuthenticated && needsOnboarding) {
       // User is authenticated but needs to create household - show empty state
+      console.log('[DataContext] Needs onboarding');
       setDemoMode(false);
       setIsLoading(false);
       setContacts([]);
       setCircles([]);
       setInvites({ sent: [], received: [] });
     } else if (DEMO_MODE_ENABLED) {
+      console.log('[DataContext] Using demo mode');
       setDemoMode(true);
       loadDemoData();
     } else {
       // Production mode without auth - show empty state
+      console.log('[DataContext] Production mode, no auth');
       setDemoMode(false);
       setIsLoading(false);
       setContacts([]);
@@ -79,6 +89,7 @@ export function DataProvider({ children }) {
 
   // Load all data from Supabase
   const loadAllData = async () => {
+    console.log('[DataContext] loadAllData called');
     setIsLoading(true);
     setError(null);
 
@@ -94,16 +105,20 @@ export function DataProvider({ children }) {
         eventsService.getAll({ zipCode })
       ]);
 
+      console.log('[DataContext] Loaded circles:', circlesData);
+      console.log('[DataContext] Loaded contacts:', contactsData);
+
       setContacts(contactsData);
       setCircles(circlesData);
       setInvites(invitesData);
       setOffers(offersData);
       setEvents(eventsData);
     } catch (err) {
-      console.error('Failed to load data:', err);
+      console.error('[DataContext] Failed to load data:', err);
       setError(err.message);
       // Fall back to demo mode on error only if demo mode is enabled
       if (DEMO_MODE_ENABLED) {
+        console.log('[DataContext] Falling back to demo mode');
         loadDemoData();
       }
     } finally {
