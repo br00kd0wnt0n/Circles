@@ -253,7 +253,103 @@ export async function createHousehold({ name, zipCode, members = [] }) {
     if (membersError) throw membersError;
   }
 
+  // Check for shadow households that should be merged (matching phone number)
+  const userPhone = user.phone || user.user_metadata?.phone;
+  if (userPhone) {
+    try {
+      await mergeShadowHouseholds(household.id, userPhone);
+    } catch (mergeErr) {
+      console.error('[createHousehold] Shadow merge failed (non-fatal):', mergeErr);
+    }
+  }
+
   return getMyHousehold();
+}
+
+/**
+ * Merge shadow households into a real household
+ * Called when a user signs up and their phone matches existing contacts
+ */
+async function mergeShadowHouseholds(realHouseholdId, phone) {
+  if (!supabase || !phone) return { merged: 0 };
+
+  console.log('[mergeShadowHouseholds] Checking for matches with phone:', phone);
+
+  // Find contacts with matching phone that have shadow households (is_app_user = false)
+  const { data: matchingContacts, error: fetchError } = await supabase
+    .from('contacts')
+    .select('id, display_name, linked_household_id, is_app_user')
+    .eq('phone', phone)
+    .eq('is_app_user', false)
+    .not('linked_household_id', 'is', null);
+
+  if (fetchError) {
+    console.error('[mergeShadowHouseholds] Failed to find matching contacts:', fetchError);
+    return { merged: 0 };
+  }
+
+  if (!matchingContacts || matchingContacts.length === 0) {
+    console.log('[mergeShadowHouseholds] No matching contacts found');
+    return { merged: 0 };
+  }
+
+  console.log('[mergeShadowHouseholds] Found matching contacts:', matchingContacts.length);
+
+  let merged = 0;
+  for (const contact of matchingContacts) {
+    const shadowHouseholdId = contact.linked_household_id;
+
+    try {
+      // 1. Migrate circle memberships from shadow to real household
+      const { data: circleMemberships } = await supabase
+        .from('circle_members')
+        .select('circle_id')
+        .eq('household_id', shadowHouseholdId);
+
+      if (circleMemberships && circleMemberships.length > 0) {
+        console.log('[mergeShadowHouseholds] Migrating', circleMemberships.length, 'circle memberships');
+
+        for (const cm of circleMemberships) {
+          // Insert new membership with real household
+          await supabase
+            .from('circle_members')
+            .upsert({
+              circle_id: cm.circle_id,
+              household_id: realHouseholdId
+            }, { onConflict: 'circle_id,household_id' });
+        }
+
+        // Delete old shadow memberships
+        await supabase
+          .from('circle_members')
+          .delete()
+          .eq('household_id', shadowHouseholdId);
+      }
+
+      // 2. Update contact to point to real household and mark as app user
+      await supabase
+        .from('contacts')
+        .update({
+          linked_household_id: realHouseholdId,
+          is_app_user: true
+        })
+        .eq('id', contact.id);
+
+      // 3. Delete the shadow household
+      await supabase
+        .from('households')
+        .delete()
+        .eq('id', shadowHouseholdId);
+
+      console.log('[mergeShadowHouseholds] Merged contact:', contact.display_name);
+      merged++;
+    } catch (err) {
+      console.error('[mergeShadowHouseholds] Failed to merge contact:', contact.id, err);
+    }
+  }
+
+  console.log('[mergeShadowHouseholds] Completed. Merged:', merged);
+  return { merged };
 }
 
 /**

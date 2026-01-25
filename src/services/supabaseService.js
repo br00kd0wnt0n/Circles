@@ -87,6 +87,9 @@ export const contactsService = {
 
   /**
    * Create a new contact
+   * Creates a "shadow household" for non-app-users so they can be added to circles.
+   * When the contact later joins the app with a matching phone, their shadow household
+   * will be merged with their real household (see mergeShadowHouseholds in supabase.js)
    */
   async create({ displayName, phone }) {
     if (!supabase) throw new Error('Supabase not configured');
@@ -94,7 +97,7 @@ export const contactsService = {
     const household = await getMyHousehold();
     if (!household) throw new Error('No household found');
 
-    // Create a "shadow household" for non-app-user contacts
+    // Create a shadow household for the contact
     // This allows them to be added to circles (which require household_id)
     const { data: shadowHousehold, error: shadowError } = await supabase
       .from('households')
@@ -121,7 +124,7 @@ export const contactsService = {
         display_name: displayName,
         phone,
         linked_household_id: shadowHousehold.id,
-        is_app_user: false // not a real app user, just has shadow household
+        is_app_user: false
       })
       .select()
       .single();
