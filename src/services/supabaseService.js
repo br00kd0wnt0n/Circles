@@ -94,31 +94,50 @@ export const contactsService = {
     const household = await getMyHousehold();
     if (!household) throw new Error('No household found');
 
-    // For now, contacts are created as non-app-users
-    // Linking to existing households would require a separate lookup mechanism
-    let linkedHouseholdId = null;
-    let isAppUser = false;
+    // Create a "shadow household" for non-app-user contacts
+    // This allows them to be added to circles (which require household_id)
+    const { data: shadowHousehold, error: shadowError } = await supabase
+      .from('households')
+      .insert({
+        name: displayName,
+        // user_id is null - this is a shadow household, not a real user
+        zip_code: household.zip_code // inherit zip from owner
+      })
+      .select()
+      .single();
 
+    if (shadowError) {
+      console.error('Failed to create shadow household:', shadowError);
+      throw shadowError;
+    }
+
+    console.log('[contactsService] Created shadow household:', shadowHousehold.id);
+
+    // Create the contact linked to the shadow household
     const { data, error } = await supabase
       .from('contacts')
       .insert({
         owner_household_id: household.id,
         display_name: displayName,
         phone,
-        linked_household_id: linkedHouseholdId,
-        is_app_user: isAppUser
+        linked_household_id: shadowHousehold.id,
+        is_app_user: false // not a real app user, just has shadow household
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Clean up shadow household if contact creation fails
+      await supabase.from('households').delete().eq('id', shadowHousehold.id);
+      throw error;
+    }
 
     return {
       id: data.id,
       displayName: data.display_name,
       phone: data.phone,
       avatar: data.avatar,
-      isAppUser: data.is_app_user,
+      isAppUser: false,
       linkedHouseholdId: data.linked_household_id,
       circles: []
     };
@@ -147,17 +166,100 @@ export const contactsService = {
   },
 
   /**
+   * Create shadow households for existing contacts without linkedHouseholdId
+   * This migrates old contacts to support circle membership
+   */
+  async migrateContactsWithoutHouseholds() {
+    if (!supabase) throw new Error('Supabase not configured');
+
+    const household = await getMyHousehold();
+    if (!household) throw new Error('No household found');
+
+    // Get contacts without linked_household_id
+    const { data: contactsToMigrate, error: fetchError } = await supabase
+      .from('contacts')
+      .select('id, display_name')
+      .eq('owner_household_id', household.id)
+      .is('linked_household_id', null);
+
+    if (fetchError) throw fetchError;
+
+    console.log('[contactsService] Contacts to migrate:', contactsToMigrate?.length || 0);
+
+    if (!contactsToMigrate || contactsToMigrate.length === 0) {
+      return { migrated: 0 };
+    }
+
+    let migrated = 0;
+    for (const contact of contactsToMigrate) {
+      try {
+        // Create shadow household
+        const { data: shadowHousehold, error: shadowError } = await supabase
+          .from('households')
+          .insert({
+            name: contact.display_name,
+            zip_code: household.zip_code
+          })
+          .select()
+          .single();
+
+        if (shadowError) {
+          console.error('Failed to create shadow household for contact:', contact.id, shadowError);
+          continue;
+        }
+
+        // Update contact with linked_household_id
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update({ linked_household_id: shadowHousehold.id })
+          .eq('id', contact.id);
+
+        if (updateError) {
+          console.error('Failed to update contact:', contact.id, updateError);
+          // Clean up shadow household
+          await supabase.from('households').delete().eq('id', shadowHousehold.id);
+          continue;
+        }
+
+        console.log('[contactsService] Migrated contact:', contact.display_name);
+        migrated++;
+      } catch (err) {
+        console.error('Migration error for contact:', contact.id, err);
+      }
+    }
+
+    return { migrated, total: contactsToMigrate.length };
+  },
+
+  /**
    * Delete a contact
    */
   async delete(contactId) {
     if (!supabase) throw new Error('Supabase not configured');
 
+    // First, get the contact to check for shadow household
+    const { data: contact } = await supabase
+      .from('contacts')
+      .select('linked_household_id, is_app_user')
+      .eq('id', contactId)
+      .single();
+
+    // Delete the contact
     const { error } = await supabase
       .from('contacts')
       .delete()
       .eq('id', contactId);
 
     if (error) throw error;
+
+    // If contact had a shadow household (non-app-user with linked_household_id), delete it
+    if (contact?.linked_household_id && !contact.is_app_user) {
+      console.log('[contactsService] Cleaning up shadow household:', contact.linked_household_id);
+      await supabase
+        .from('households')
+        .delete()
+        .eq('id', contact.linked_household_id);
+    }
   }
 };
 

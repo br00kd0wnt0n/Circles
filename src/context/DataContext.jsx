@@ -108,7 +108,29 @@ export function DataProvider({ children }) {
       console.log('[DataContext] Loaded circles:', circlesData);
       console.log('[DataContext] Loaded contacts:', contactsData);
 
-      setContacts(contactsData);
+      // Check if any contacts need migration (no linkedHouseholdId)
+      const needsMigration = contactsData.some(c => !c.linkedHouseholdId);
+      if (needsMigration) {
+        console.log('[DataContext] Migrating contacts without households...');
+        try {
+          const result = await contactsService.migrateContactsWithoutHouseholds();
+          console.log('[DataContext] Migration result:', result);
+          if (result.migrated > 0) {
+            // Reload contacts to get updated linkedHouseholdIds
+            const refreshedContacts = await contactsService.getAll();
+            setContacts(refreshedContacts);
+            console.log('[DataContext] Reloaded contacts after migration');
+          } else {
+            setContacts(contactsData);
+          }
+        } catch (migrationErr) {
+          console.error('[DataContext] Migration failed:', migrationErr);
+          setContacts(contactsData); // Use original data if migration fails
+        }
+      } else {
+        setContacts(contactsData);
+      }
+
       setCircles(circlesData);
       setInvites(invitesData);
       setOffers(offersData);
