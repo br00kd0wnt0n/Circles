@@ -537,32 +537,43 @@ function EditCircleModal({ circle, onClose, onSave, isDark, friendHouseholds, on
               Members ({selectedMembers.length})
             </label>
             <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-              {safeHouseholds.map(household => {
-                const isSelected = selectedMembers.includes(household.id);
-                return (
-                  <button
-                    key={household.id}
-                    onClick={() => toggleMember(household.id)}
-                    className={`w-full flex items-center gap-3 p-2 rounded-xl transition-colors ${
-                      isSelected
-                        ? 'bg-[#9CAF88]/20 border-2 border-[#9CAF88]'
-                        : isDark ? 'bg-white/5 border-2 border-transparent' : 'bg-gray-50 border-2 border-transparent'
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                      isDark ? 'bg-white/10' : 'bg-gray-100'
-                    }`}>
-                      {household.members?.[0]?.avatar || '👤'}
-                    </div>
-                    <span className={`flex-1 text-left font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {household.householdName}
-                    </span>
-                    {isSelected && (
-                      <Check className="w-5 h-5 text-[#9CAF88]" />
-                    )}
-                  </button>
-                );
-              })}
+              {safeHouseholds.length === 0 ? (
+                <div className={`text-center py-4 px-3 rounded-xl ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
+                    No contacts available to add to circles.
+                  </p>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
+                    Only contacts who are also app users can be added to circles.
+                  </p>
+                </div>
+              ) : (
+                safeHouseholds.map(household => {
+                  const isSelected = selectedMembers.includes(household.id);
+                  return (
+                    <button
+                      key={household.id}
+                      onClick={() => toggleMember(household.id)}
+                      className={`w-full flex items-center gap-3 p-2 rounded-xl transition-colors ${
+                        isSelected
+                          ? 'bg-[#9CAF88]/20 border-2 border-[#9CAF88]'
+                          : isDark ? 'bg-white/5 border-2 border-transparent' : 'bg-gray-50 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                        isDark ? 'bg-white/10' : 'bg-gray-100'
+                      }`}>
+                        {household.members?.[0]?.avatar || '👤'}
+                      </div>
+                      <span className={`flex-1 text-left font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {household.householdName}
+                      </span>
+                      {isSelected && (
+                        <Check className="w-5 h-5 text-[#9CAF88]" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
