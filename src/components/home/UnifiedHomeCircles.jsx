@@ -409,14 +409,14 @@ export function UnifiedHomeCircles({
     return { available: available.length, total: liveHouseholds.length };
   }, [liveHouseholds]);
 
-  // Only show Venn diagram if in demo mode with demo circles, or if user has circles
+  // Only show Venn diagram if we have circles (demo or real)
   const hasDemoCircles = demoMode && circles.some(c =>
     ['rock-academy', 'woodstock-elementary', 'nyc-friends'].includes(c.id)
   );
   const hasUserCircles = !demoMode && circles.length > 0;
 
-  // Venn view is only valid when we have the demo circles layout
-  const isVennView = viewMode === 'venn' && hasDemoCircles;
+  // Venn view works with both demo circles and real user circles
+  const isVennView = viewMode === 'venn' && (hasDemoCircles || hasUserCircles);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

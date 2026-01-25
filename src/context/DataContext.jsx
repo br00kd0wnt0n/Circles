@@ -237,11 +237,22 @@ export function DataProvider({ children }) {
 
   // Add invite (demo mode or API)
   const addInvite = useCallback(async (inviteData) => {
+    // Map frontend field names to service field names
+    const mappedData = {
+      householdIds: inviteData.invitedHouseholds || inviteData.householdIds,
+      activityName: inviteData.activity || inviteData.activityName,
+      proposedDate: inviteData.date || inviteData.proposedDate,
+      proposedTime: inviteData.timeSlot || inviteData.proposedTime,
+      location: inviteData.location,
+      message: inviteData.message
+    };
+
     if (demoMode) {
       const newInvite = {
         id: `demo-${Date.now()}`,
         type: 'sent',
         ...inviteData,
+        ...mappedData,
         status: 'pending',
         createdAt: new Date().toISOString()
       };
@@ -253,7 +264,7 @@ export function DataProvider({ children }) {
     }
 
     try {
-      const created = await invitesService.create(inviteData);
+      const created = await invitesService.create(mappedData);
       setInvites(prev => ({
         ...prev,
         sent: [...prev.sent, created]
