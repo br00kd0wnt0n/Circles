@@ -1,9 +1,15 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Plus, UserPlus, Phone, MessageCircle, MoreVertical, Trash2 } from 'lucide-react';
+import { X, Search, Plus, UserPlus, Phone, MessageCircle, MoreVertical, Trash2, Link, Copy, Check, UserPlus2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
 import { StatusDot } from '../components/ui/StatusDot';
+
+// Generate invite link URL
+const getInviteUrl = (token) => {
+  const baseUrl = window.location.origin;
+  return `${baseUrl}/join/${token}`;
+};
 
 export function ContactsScreen({ isOpen, onClose }) {
   const { themeId } = useTheme();
@@ -13,7 +19,13 @@ export function ContactsScreen({ isOpen, onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all'); // all, available, app-users
   const [showAddContact, setShowAddContact] = useState(false);
-  const [selectedContact, setSelectedContact] = useState(null);
+  const [selectedContactId, setSelectedContactId] = useState(null);
+
+  // Get the selected contact from the contacts list (so it updates when circles change)
+  const selectedContact = useMemo(() => {
+    if (!selectedContactId) return null;
+    return contacts?.find(c => c.id === selectedContactId) || null;
+  }, [selectedContactId, contacts]);
 
   // Use contacts from API or friendHouseholds as fallback
   const allContacts = useMemo(() => {
@@ -175,7 +187,7 @@ export function ContactsScreen({ isOpen, onClose }) {
                   {contacts.map(contact => (
                     <motion.button
                       key={contact.id}
-                      onClick={() => setSelectedContact(contact)}
+                      onClick={() => setSelectedContactId(contact.id)}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
                         isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'
                       }`}
@@ -260,7 +272,7 @@ export function ContactsScreen({ isOpen, onClose }) {
         {selectedContact && (
           <ContactDetailModal
             contact={selectedContact}
-            onClose={() => setSelectedContact(null)}
+            onClose={() => setSelectedContactId(null)}
             isDark={isDark}
             allCircles={circles}
             onUpdateContact={updateContact}
@@ -373,8 +385,41 @@ function ContactDetailModal({ contact, onClose, isDark, onUpdateContact, onDelet
   const [editName, setEditName] = useState(contact.displayName || '');
   const [showCirclePicker, setShowCirclePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const contactCircleIds = (contact.circles || []).map(c => c.id);
+  const inviteUrl = contact.inviteToken ? getInviteUrl(contact.inviteToken) : null;
+
+  const handleCopyInviteLink = async () => {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleShareInviteLink = async () => {
+    if (!inviteUrl) return;
+    const shareData = {
+      title: 'Join me on Circles!',
+      text: `Hey! Join me on Circles so we can make plans together.`,
+      url: inviteUrl
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        handleCopyInviteLink();
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Share failed:', err);
+      }
+    }
+  };
 
   const handleSaveName = async () => {
     if (!editName.trim() || editName === contact.displayName) {
@@ -504,11 +549,62 @@ function ContactDetailModal({ contact, onClose, isDark, onUpdateContact, onDelet
             <MessageCircle className={`w-5 h-5 ${isDark ? 'text-white' : 'text-gray-700'}`} />
             <span className={isDark ? 'text-white' : 'text-gray-700'}>Message</span>
           </button>
-          <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#9CAF88] text-white">
-            <Phone className="w-5 h-5" />
-            <span>Invite</span>
-          </button>
+          {contact.isAppUser ? (
+            <button className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl ${
+              isDark ? 'bg-white/10' : 'bg-gray-100'
+            }`}>
+              <Phone className={`w-5 h-5 ${isDark ? 'text-white' : 'text-gray-700'}`} />
+              <span className={isDark ? 'text-white' : 'text-gray-700'}>Call</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleShareInviteLink}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#9CAF88] text-white"
+            >
+              <UserPlus2 className="w-5 h-5" />
+              <span>Invite to App</span>
+            </button>
+          )}
         </div>
+
+        {/* Invite Link Section (for non-app users) */}
+        {!contact.isAppUser && inviteUrl && (
+          <div className={`mb-6 p-4 rounded-xl ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className={`text-sm font-medium ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+                Invite Link
+              </h4>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleCopyInviteLink}
+                  className={`p-2 rounded-lg transition-colors ${
+                    copiedLink
+                      ? 'bg-green-500/20 text-green-500'
+                      : isDark ? 'hover:bg-white/10 text-white/70' : 'hover:bg-gray-200 text-gray-500'
+                  }`}
+                  title="Copy link"
+                >
+                  {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={handleShareInviteLink}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDark ? 'hover:bg-white/10 text-white/70' : 'hover:bg-gray-200 text-gray-500'
+                  }`}
+                  title="Share link"
+                >
+                  <Link className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <p className={`text-xs break-all ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+              {inviteUrl}
+            </p>
+            <p className={`text-xs mt-2 ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
+              When they sign up with this link, they'll automatically be connected to you.
+            </p>
+          </div>
+        )}
 
         {/* Circles */}
         <div className="mb-6">
@@ -517,31 +613,38 @@ function ContactDetailModal({ contact, onClose, isDark, onUpdateContact, onDelet
           </h4>
           {showCirclePicker ? (
             <div className="space-y-2">
-              {(allCircles || []).map(circle => {
-                const isInCircle = contactCircleIds.includes(circle.id);
-                return (
-                  <button
-                    key={circle.id}
-                    onClick={() => handleToggleCircle(circle.id)}
-                    disabled={isSaving}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                      isInCircle
-                        ? 'ring-2 ring-[#9CAF88]'
-                        : isDark ? 'bg-white/5' : 'bg-gray-50'
-                    }`}
-                    style={{ backgroundColor: isInCircle ? `${circle.color}20` : undefined }}
-                  >
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: circle.color }}
-                    />
-                    <span className={isDark ? 'text-white' : 'text-gray-900'}>{circle.name}</span>
-                    {isInCircle && (
-                      <span className="ml-auto text-[#9CAF88]">✓</span>
-                    )}
-                  </button>
-                );
-              })}
+              {(!allCircles || allCircles.length === 0) ? (
+                <div className={`text-center py-4 ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
+                  <p className="text-sm">No circles yet</p>
+                  <p className="text-xs mt-1">Create circles in Settings to organize your contacts</p>
+                </div>
+              ) : (
+                (allCircles || []).map(circle => {
+                  const isInCircle = contactCircleIds.includes(circle.id);
+                  return (
+                    <button
+                      key={circle.id}
+                      onClick={() => handleToggleCircle(circle.id)}
+                      disabled={isSaving}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                        isInCircle
+                          ? 'ring-2 ring-[#9CAF88]'
+                          : isDark ? 'bg-white/5' : 'bg-gray-50'
+                      }`}
+                      style={{ backgroundColor: isInCircle ? `${circle.color}20` : undefined }}
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: circle.color }}
+                      />
+                      <span className={isDark ? 'text-white' : 'text-gray-900'}>{circle.name}</span>
+                      {isInCircle && (
+                        <span className="ml-auto text-[#9CAF88]">✓</span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
               <button
                 onClick={() => setShowCirclePicker(false)}
                 className={`w-full py-2 text-center text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}

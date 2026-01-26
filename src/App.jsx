@@ -17,6 +17,20 @@ import { useData } from './context/DataContext';
 import { useWeather } from './hooks/useWeather';
 import OnboardingFlow from './screens/OnboardingFlow';
 
+// Check for invite token in URL and store it for onboarding
+function captureInviteToken() {
+  const path = window.location.pathname;
+  const joinMatch = path.match(/^\/join\/([a-zA-Z0-9-]+)$/);
+  if (joinMatch) {
+    const token = joinMatch[1];
+    localStorage.setItem('circles-invite-token', token);
+    // Clean up URL without losing history
+    window.history.replaceState({}, '', '/');
+    return token;
+  }
+  return localStorage.getItem('circles-invite-token');
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState('circles'); // circles is now the main view
   const [viewMode, setViewMode] = useState('venn'); // 'venn' or 'scattered'

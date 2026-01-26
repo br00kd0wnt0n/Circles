@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { circlesService } from '../services/supabaseService';
+import { circlesService, contactsService } from '../services/supabaseService';
 import PhoneInput from '../components/auth/PhoneInput';
 import OTPInput from '../components/auth/OTPInput';
 
@@ -54,6 +54,35 @@ export default function OnboardingFlow() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Invite link context
+  const [inviteInfo, setInviteInfo] = useState(null);
+
+  // Check for invite token on mount
+  useEffect(() => {
+    const token = localStorage.getItem('circles-invite-token');
+    if (token) {
+      contactsService.findByInviteToken(token).then(info => {
+        if (info) {
+          setInviteInfo(info);
+          // Pre-fill household name from shadow if available
+          if (info.shadowHouseholdName) {
+            setHouseholdName(info.shadowHouseholdName);
+          }
+          // Pre-fill members if available
+          if (info.members?.length > 0) {
+            setMembers(info.members.map(m => ({
+              name: m.name,
+              role: m.role || 'adult',
+              avatar: m.avatar || '👨'
+            })));
+          }
+        }
+      }).catch(err => {
+        console.error('Failed to fetch invite info:', err);
+      });
+    }
+  }, []);
 
   // Phone step
   const handleRequestOtp = useCallback(async () => {
@@ -364,8 +393,22 @@ export default function OnboardingFlow() {
         {step === STEPS.AUTH_METHOD && (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-white mb-2">Welcome to Circles</h1>
-              <p className="text-white/70">How would you like to sign in?</p>
+              {inviteInfo ? (
+                <>
+                  <div className="text-5xl mb-4">👋</div>
+                  <h1 className="text-2xl font-bold text-white mb-2">
+                    {inviteInfo.invitedBy} invited you!
+                  </h1>
+                  <p className="text-white/70">
+                    Sign up to connect with them on Circles
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold text-white mb-2">Welcome to Circles</h1>
+                  <p className="text-white/70">How would you like to sign in?</p>
+                </>
+              )}
             </div>
 
             <div className="space-y-3 pt-4">
@@ -531,7 +574,11 @@ export default function OnboardingFlow() {
           <div className="space-y-6 animate-fade-in">
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">Name your household</h1>
-              <p className="text-white/70">This is how friends will see you</p>
+              <p className="text-white/70">
+                {inviteInfo
+                  ? `We've pre-filled this based on how ${inviteInfo.invitedBy} knows you`
+                  : 'This is how friends will see you'}
+              </p>
             </div>
 
             <input
@@ -572,7 +619,11 @@ export default function OnboardingFlow() {
           <div className="space-y-6 animate-fade-in">
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">Who's in your household?</h1>
-              <p className="text-white/70">Add family members, roommates, or pets</p>
+              <p className="text-white/70">
+                {inviteInfo?.members?.length > 0
+                  ? 'Confirm or update these details'
+                  : 'Add family members, roommates, or pets'}
+              </p>
             </div>
 
             <div className="space-y-4 max-h-[400px] overflow-y-auto">

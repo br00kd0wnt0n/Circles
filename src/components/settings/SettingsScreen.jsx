@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, User, Users, Bell, Palette, HelpCircle, LogOut, Contact, CircleDot, Trash2 } from 'lucide-react';
+import { X, ChevronRight, User, Users, Bell, Palette, HelpCircle, LogOut, Contact, CircleDot, Trash2, FlaskConical, UserPlus } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { membersService } from '../../services/supabaseService';
+import { membersService, contactsService } from '../../services/supabaseService';
 import { updateHousehold as supabaseUpdateHousehold } from '../../lib/supabase';
+
+const isDev = import.meta.env.DEV;
 
 const AVATARS = ['👨', '👩', '👦', '👧', '🧒', '👶', '🐕', '🐈', '🏠'];
 
@@ -15,6 +17,7 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', role: 'adult', avatar: '👤' });
   const [isSaving, setIsSaving] = useState(false);
+  const [testFriendsStatus, setTestFriendsStatus] = useState(null);
 
   // Sync state when household changes
   useEffect(() => {
@@ -101,6 +104,20 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
 
   const handleSaveAll = () => {
     onClose();
+  };
+
+  const handleCreateTestFriends = async () => {
+    setTestFriendsStatus('creating');
+    try {
+      const result = await contactsService.createTestFriends();
+      setTestFriendsStatus(`Created ${result.count} test friends!`);
+      // Auto-clear status after 3 seconds
+      setTimeout(() => setTestFriendsStatus(null), 3000);
+    } catch (err) {
+      console.error('Failed to create test friends:', err);
+      setTestFriendsStatus('Failed to create test friends');
+      setTimeout(() => setTestFriendsStatus(null), 3000);
+    }
   };
 
   return (
@@ -380,6 +397,37 @@ export function SettingsScreen({ isOpen, onClose, household, onUpdateHousehold, 
                   </button>
                 </div>
               </div>
+
+              {/* Developer Tools - only in dev mode */}
+              {isDev && (
+                <div className="p-4">
+                  <h3 className="text-sm font-medium text-[#6B7280] mb-3 uppercase tracking-wide">
+                    Developer Tools
+                  </h3>
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                    <button
+                      onClick={handleCreateTestFriends}
+                      disabled={testFriendsStatus === 'creating'}
+                      className="w-full p-4 flex items-center justify-between hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <UserPlus size={20} className="text-[#9CAF88]" />
+                        <div className="text-left">
+                          <span className="text-[#1F2937] block">Create Test Friends</span>
+                          <span className="text-xs text-[#6B7280]">
+                            {testFriendsStatus === 'creating'
+                              ? 'Creating...'
+                              : testFriendsStatus
+                              ? testFriendsStatus
+                              : '5 confirmed app user friends'}
+                          </span>
+                        </div>
+                      </div>
+                      <FlaskConical size={20} className="text-[#6B7280]" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Save Button */}

@@ -3,7 +3,7 @@
  * Replaces Express backend API calls with direct Supabase queries
  */
 
-import { supabase, getMyHousehold } from '../lib/supabase';
+import { supabase, getMyHousehold, getUser } from '../lib/supabase';
 
 // ============================================
 // CONTACTS
@@ -28,6 +28,7 @@ export const contactsService = {
         avatar,
         is_app_user,
         linked_household_id,
+        invite_token,
         linked_household:households!linked_household_id (
           name,
           household_status (
@@ -35,6 +36,12 @@ export const contactsService = {
             note,
             time_window,
             updated_at
+          ),
+          household_members (
+            id,
+            name,
+            role,
+            avatar
           )
         )
       `)
@@ -80,31 +87,84 @@ export const contactsService = {
         linkedHouseholdId: contact.linked_household_id,
         householdName: contact.linked_household?.name,
         status: contact.linked_household?.household_status?.[0] || null,
-        circles: contactCircles
+        circles: contactCircles,
+        inviteToken: contact.invite_token,
+        members: contact.linked_household?.household_members || []
       };
     });
   },
 
   /**
+   * Find a contact by invite token (for signup flow)
+   */
+  async findByInviteToken(token) {
+    if (!supabase || !token) return null;
+
+    const { data, error } = await supabase
+      .from('contacts')
+      .select(`
+        id,
+        display_name,
+        phone,
+        owner_household_id,
+        linked_household_id,
+        linked_household:households!linked_household_id (
+          name,
+          household_members (
+            id,
+            name,
+            role,
+            avatar
+          )
+        ),
+        owner:households!owner_household_id (
+          name
+        )
+      `)
+      .eq('invite_token', token)
+      .eq('is_app_user', false)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      id: data.id,
+      displayName: data.display_name,
+      phone: data.phone,
+      linkedHouseholdId: data.linked_household_id,
+      shadowHouseholdName: data.linked_household?.name,
+      members: data.linked_household?.household_members || [],
+      invitedBy: data.owner?.name || 'A friend'
+    };
+  },
+
+  /**
    * Create a new contact
    * Creates a "shadow household" for non-app-users so they can be added to circles.
-   * When the contact later joins the app with a matching phone, their shadow household
-   * will be merged with their real household (see mergeShadowHouseholds in supabase.js)
+   * Generates an invite token for sharing invite links.
+   * When the contact joins via invite link or matching phone, their shadow household
+   * will be merged with their real household.
    */
-  async create({ displayName, phone }) {
+  async create({ displayName, phone, members = [] }) {
     if (!supabase) throw new Error('Supabase not configured');
 
     const household = await getMyHousehold();
     if (!household) throw new Error('No household found');
 
+    const user = await getUser();
+    if (!user) throw new Error('No authenticated user');
+
+    // Generate unique invite token
+    const inviteToken = crypto.randomUUID();
+
     // Create a shadow household for the contact
-    // This allows them to be added to circles (which require household_id)
+    // Note: user_id is required (NOT NULL constraint in production)
     const { data: shadowHousehold, error: shadowError } = await supabase
       .from('households')
       .insert({
         name: displayName,
-        // user_id is null - this is a shadow household, not a real user
-        zip_code: household.zip_code // inherit zip from owner
+        zip_code: household.zip_code,
+        user_id: user.id
       })
       .select()
       .single();
@@ -116,15 +176,36 @@ export const contactsService = {
 
     console.log('[contactsService] Created shadow household:', shadowHousehold.id);
 
+    // Add family members to shadow household if provided
+    if (members.length > 0) {
+      const membersToInsert = members.map((m, index) => ({
+        household_id: shadowHousehold.id,
+        name: m.name,
+        role: m.role || 'adult',
+        avatar: m.avatar || '👤',
+        is_primary: index === 0
+      }));
+
+      const { error: membersError } = await supabase
+        .from('household_members')
+        .insert(membersToInsert);
+
+      if (membersError) {
+        console.error('Failed to add members to shadow household:', membersError);
+        // Non-fatal, continue
+      }
+    }
+
     // Create the contact linked to the shadow household
     const { data, error } = await supabase
       .from('contacts')
       .insert({
         owner_household_id: household.id,
         display_name: displayName,
-        phone,
+        phone: phone || null,
         linked_household_id: shadowHousehold.id,
-        is_app_user: false
+        is_app_user: false,
+        invite_token: inviteToken
       })
       .select()
       .single();
@@ -142,7 +223,9 @@ export const contactsService = {
       avatar: data.avatar,
       isAppUser: false,
       linkedHouseholdId: data.linked_household_id,
-      circles: []
+      inviteToken: data.invite_token,
+      circles: [],
+      members: members
     };
   },
 
@@ -178,6 +261,9 @@ export const contactsService = {
     const household = await getMyHousehold();
     if (!household) throw new Error('No household found');
 
+    const user = await getUser();
+    if (!user) throw new Error('No authenticated user');
+
     // Get contacts without linked_household_id
     const { data: contactsToMigrate, error: fetchError } = await supabase
       .from('contacts')
@@ -197,11 +283,13 @@ export const contactsService = {
     for (const contact of contactsToMigrate) {
       try {
         // Create shadow household
+        // Note: user_id is required (NOT NULL constraint in production)
         const { data: shadowHousehold, error: shadowError } = await supabase
           .from('households')
           .insert({
             name: contact.display_name,
-            zip_code: household.zip_code
+            zip_code: household.zip_code,
+            user_id: user.id
           })
           .select()
           .single();
@@ -263,6 +351,155 @@ export const contactsService = {
         .delete()
         .eq('id', contact.linked_household_id);
     }
+  },
+
+  /**
+   * Create test friends for development/testing
+   * These are "confirmed app users" with realistic data and status
+   */
+  async createTestFriends() {
+    if (!supabase) throw new Error('Supabase not configured');
+
+    const household = await getMyHousehold();
+    if (!household) throw new Error('No household found');
+
+    const user = await getUser();
+    if (!user) throw new Error('No authenticated user');
+
+    const testFriends = [
+      {
+        displayName: 'The Johnsons',
+        status: 'available',
+        note: 'Free this weekend!',
+        members: [
+          { name: 'Mike', role: 'adult', avatar: '👨' },
+          { name: 'Sarah', role: 'adult', avatar: '👩' },
+          { name: 'Emma', role: 'child', avatar: '👧' }
+        ]
+      },
+      {
+        displayName: 'Patel Family',
+        status: 'open',
+        note: 'Looking for playdate partners',
+        members: [
+          { name: 'Raj', role: 'adult', avatar: '👨' },
+          { name: 'Priya', role: 'adult', avatar: '👩' },
+          { name: 'Arun', role: 'child', avatar: '👦' },
+          { name: 'Maya', role: 'child', avatar: '👧' }
+        ]
+      },
+      {
+        displayName: 'Chen Household',
+        status: 'busy',
+        note: 'Traveling until next week',
+        members: [
+          { name: 'David', role: 'adult', avatar: '👨' },
+          { name: 'Lisa', role: 'adult', avatar: '👩' }
+        ]
+      },
+      {
+        displayName: 'Garcia + Kids',
+        status: 'available',
+        note: null,
+        members: [
+          { name: 'Maria', role: 'adult', avatar: '👩' },
+          { name: 'Carlos', role: 'child', avatar: '👦' },
+          { name: 'Sofia', role: 'child', avatar: '👧' }
+        ]
+      },
+      {
+        displayName: 'The Williams',
+        status: 'open',
+        note: 'Always up for coffee',
+        members: [
+          { name: 'James', role: 'adult', avatar: '👨' },
+          { name: 'Olivia', role: 'adult', avatar: '👩' },
+          { name: 'Max', role: 'pet', avatar: '🐕' }
+        ]
+      }
+    ];
+
+    const created = [];
+
+    for (const friend of testFriends) {
+      try {
+        // Create a "real" household for this test friend (simulating they're an app user)
+        // Note: user_id is required (NOT NULL constraint in production)
+        const { data: friendHousehold, error: householdError } = await supabase
+          .from('households')
+          .insert({
+            name: friend.displayName,
+            zip_code: household.zip_code,
+            user_id: user.id
+          })
+          .select()
+          .single();
+
+        if (householdError) {
+          console.error('Failed to create test friend household:', householdError);
+          continue;
+        }
+
+        // Add family members
+        if (friend.members.length > 0) {
+          const membersToInsert = friend.members.map((m, index) => ({
+            household_id: friendHousehold.id,
+            name: m.name,
+            role: m.role,
+            avatar: m.avatar,
+            is_primary: index === 0
+          }));
+
+          await supabase.from('household_members').insert(membersToInsert);
+        }
+
+        // Create status for the household
+        await supabase
+          .from('household_status')
+          .insert({
+            household_id: friendHousehold.id,
+            state: friend.status,
+            note: friend.note,
+            time_window: null
+          });
+
+        // Create the contact linking to this household (marked as app user)
+        const { data: contact, error: contactError } = await supabase
+          .from('contacts')
+          .insert({
+            owner_household_id: household.id,
+            display_name: friend.displayName,
+            linked_household_id: friendHousehold.id,
+            is_app_user: true,  // Key: they're confirmed app users
+            invite_token: null  // No invite needed - they're already "on the app"
+          })
+          .select()
+          .single();
+
+        if (contactError) {
+          console.error('Failed to create test friend contact:', contactError);
+          // Clean up the household we created
+          await supabase.from('households').delete().eq('id', friendHousehold.id);
+          continue;
+        }
+
+        created.push({
+          id: contact.id,
+          displayName: contact.display_name,
+          linkedHouseholdId: friendHousehold.id,
+          isAppUser: true,
+          status: { state: friend.status, note: friend.note },
+          members: friend.members
+        });
+
+        console.log('[createTestFriends] Created:', friend.displayName);
+      } catch (err) {
+        console.error('Error creating test friend:', friend.displayName, err);
+      }
+    }
+
+    console.log('[createTestFriends] Total created:', created.length);
+    return { created, count: created.length };
   }
 };
 
