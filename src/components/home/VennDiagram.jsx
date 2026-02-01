@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { StatusDot } from '../ui/StatusDot';
 import { useData } from '../../context/DataContext';
 
@@ -11,20 +11,10 @@ const getZoneKey = (circleIds) => {
 
 export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCircle }) {
   const { circles, friendHouseholds } = useData();
-  const [hoveredHousehold, setHoveredHousehold] = useState(null);
-  const [hoveredCircle, setHoveredCircle] = useState(null);
-  const [selectedCircle, setSelectedCircle] = useState(null);
-
-  // Debug logging
-  console.log('[VennDiagram] circles:', circles?.length, circles?.map(c => ({ id: c.id, name: c.name })));
-  console.log('[VennDiagram] friendHouseholds:', friendHouseholds?.length, friendHouseholds?.map(h => ({ id: h.id, name: h.householdName, circleIds: h.circleIds })));
-
-  // Handle circle click - toggle selection
+  // Handle circle click - delegate to parent for full-screen expansion
   const handleCircleClick = (circleId) => {
-    const newSelected = selectedCircle === circleId ? null : circleId;
-    setSelectedCircle(newSelected);
     if (onSelectCircle) {
-      onSelectCircle(newSelected ? circles.find(c => c.id === newSelected) : null);
+      onSelectCircle(circles.find(c => c.id === circleId));
     }
   };
 
@@ -115,7 +105,15 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
     const layouts = {};
     const count = circles.length;
 
-    if (count === 0) return layouts;
+    if (count === 0) {
+      // Even with no circles, position unassigned contacts in a ring
+      layouts[''] = {
+        base: { x: 50, y: 50 },
+        direction: 'circular',
+        radius: 40
+      };
+      return layouts;
+    }
 
     // For each circle, place households on the outer edge opposite to center
     circles.forEach((circle, i) => {
@@ -166,11 +164,11 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
       };
     }
 
-    // Uncircled contacts - position them around the bottom edge
+    // Uncircled contacts - position them in a ring around the venn perimeter
     layouts[''] = {
-      base: { x: 50, y: 95 },
-      direction: 'horizontal',
-      spacing: 12
+      base: { x: 50, y: 50 },
+      direction: 'circular',
+      radius: 48
     };
 
     return layouts;
@@ -180,6 +178,17 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
   const getHouseholdPosition = (household, zoneKey, indexInZone, totalInZone) => {
     const layout = zoneLayouts[zoneKey] || { base: { x: 50, y: 50 }, direction: 'center', spacing: 0 };
     const { base, direction, spacing } = layout;
+
+    if (direction === 'circular') {
+      const radius = layout.radius || 45;
+      const angle = (totalInZone === 1)
+        ? -Math.PI / 2  // Single contact at 12 o'clock
+        : (indexInZone / totalInZone) * 2 * Math.PI - Math.PI / 2;
+      return {
+        x: base.x + radius * Math.cos(angle),
+        y: base.y + radius * Math.sin(angle)
+      };
+    }
 
     if (totalInZone === 1 || direction === 'center') {
       return base;
@@ -202,9 +211,6 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
     }
   };
 
-  const highlightedCircles = hoveredHousehold
-    ? friendHouseholds.find(h => h.id === hoveredHousehold)?.circleIds || []
-    : hoveredCircle ? [hoveredCircle] : [];
 
   // Convert hex to rgba
   const hexToRgba = (hex, alpha) => {
@@ -287,10 +293,6 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
           const layout = circleLayout[circle.id];
           if (!layout) return null;
 
-          const isHighlighted = highlightedCircles.includes(circle.id);
-          const isSelected = selectedCircle === circle.id;
-          const isHovered = hoveredCircle === circle.id;
-
           return (
             <motion.circle
               key={circle.id}
@@ -298,21 +300,19 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
               cy={layout.cy || 50}
               initial={{ r: layout.r || 35 }}
               animate={{
-                r: isSelected ? (layout.r || 35) * 1.15 : (layout.r || 35),
+                r: layout.r || 35,
                 y: [0, -1, 0, 1, 0],
                 x: [0, 0.3, 0, -0.3, 0]
               }}
-              fill={hexToRgba(circle.color, isSelected ? 0.4 : isHighlighted ? 0.3 : 0.2)}
+              fill={hexToRgba(circle.color, 0.2)}
               stroke={circle.color}
-              strokeWidth={isSelected ? 1.2 : isHighlighted ? 0.8 : 0.5}
-              strokeOpacity={isSelected ? 0.9 : isHighlighted ? 0.6 : 0.35}
+              strokeWidth={0.5}
+              strokeOpacity={0.35}
               transition={{
                 r: { duration: 0.3, ease: "easeOut" },
                 y: { duration: 5 + index, repeat: Infinity, ease: "easeInOut" },
                 x: { duration: 6 + index, repeat: Infinity, ease: "easeInOut" }
               }}
-              onMouseEnter={() => setHoveredCircle(circle.id)}
-              onMouseLeave={() => setHoveredCircle(null)}
               onClick={() => handleCircleClick(circle.id)}
               style={{ cursor: 'pointer' }}
             />
@@ -320,17 +320,16 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
         })}
 
         {/* Curved text labels */}
-        {circleLabelInfo.map(circle => {
-          const isHighlighted = highlightedCircles.includes(circle.id);
-
-          return (
-            <text
-              key={`label-${circle.id}`}
-              fill={circle.color}
-              fontSize="3.5"
-              fontWeight="600"
-              opacity={isHighlighted ? 1 : 0.7}
-            >
+        {circleLabelInfo.map(circle => (
+          <text
+            key={`label-${circle.id}`}
+            fill={circle.color}
+            fontSize="3.5"
+            fontWeight="600"
+            opacity={0.7}
+            onClick={() => handleCircleClick(circle.id)}
+            style={{ cursor: 'pointer' }}
+          >
               <textPath
                 href={`#textPath-${circle.id}`}
                 startOffset="50%"
@@ -339,8 +338,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
                 {circle.name}
               </textPath>
             </text>
-          );
-        })}
+        ))}
       </svg>
 
       {/* Household avatars positioned in zones */}
@@ -349,11 +347,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
           households.map((household, idx) => {
             const pos = getHouseholdPosition(household, zoneKey, idx, households.length);
             const isAvailable = household.status.state !== 'busy';
-            const isHovered = hoveredHousehold === household.id;
             const isSelected = selectedHousehold?.id === household.id;
-            const isInHighlightedCircle = highlightedCircles.some(c =>
-              household.circleIds?.includes(c)
-            );
             const hasNote = !!household.status.note;
             // Get the color from the household's first circle
             const pulseColor = household.circleIds?.length > 0
@@ -368,7 +362,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
                   transform: 'translate(-50%, -50%)',
-                  zIndex: isHovered || isSelected ? 30 : 10
+                  zIndex: isSelected ? 30 : 10
                 }}
               >
                 {/* Pulse rings for households with notes */}
@@ -408,28 +402,19 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
 
                 <motion.button
                   onClick={() => isAvailable && onSelectHousehold(household)}
-                  onMouseEnter={() => setHoveredHousehold(household.id)}
-                  onMouseLeave={() => setHoveredHousehold(null)}
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{
                     opacity: 1,
-                    scale: isHovered || isSelected ? 1.3 : 1
+                    scale: isSelected ? 1.3 : 1
                   }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm shadow-md border-2 transition-all ${
                     isAvailable
                       ? isSelected
-                        ? 'bg-[#9CAF88] border-white cursor-pointer'
-                        : isHovered
-                        ? 'bg-white border-[#9CAF88] cursor-pointer shadow-lg'
-                        : 'bg-white border-white cursor-pointer hover:shadow-lg'
-                      : 'bg-gray-100 border-gray-200 opacity-40 cursor-not-allowed'
+                        ? 'bg-[#9CAF88] border-white'
+                        : 'bg-white border-white active:scale-110'
+                      : 'bg-gray-100 border-gray-200 opacity-40'
                   }`}
-                  style={{
-                    boxShadow: isInHighlightedCircle && !isHovered && !isSelected
-                      ? '0 0 0 2px rgba(156, 175, 136, 0.5)'
-                      : undefined
-                  }}
                 >
                   {household.members[0]?.avatar || '👥'}
                   <span className="absolute -bottom-0.5 -right-0.5">
@@ -449,142 +434,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
         )}
       </div>
 
-      {/* Hover tooltip */}
-      <AnimatePresence>
-        {hoveredHousehold && (
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 bg-white px-3 py-2 rounded-xl shadow-lg border border-gray-100 z-40 min-w-[140px]"
-          >
-            {(() => {
-              const h = friendHouseholds.find(h => h.id === hoveredHousehold);
-              if (!h) return null;
-              const hCircles = circles.filter(c => h.circleIds?.includes(c.id));
-              return (
-                <>
-                  <p className="text-sm font-medium text-[#1F2937]">{h.householdName}</p>
-                  {h.status.note && (
-                    <p className="text-xs text-[#6B7280] mt-0.5 italic">"{h.status.note}"</p>
-                  )}
-                  {hCircles.length > 1 && (
-                    <div className="flex gap-1.5 mt-1.5">
-                      {hCircles.map(c => (
-                        <span
-                          key={c.id}
-                          className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
-                          style={{
-                            backgroundColor: hexToRgba(c.color, 0.2),
-                            color: c.color
-                          }}
-                        >
-                          {c.name.split(' ')[0]}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Circle hover tooltip - only show when not selected */}
-      <AnimatePresence>
-        {hoveredCircle && !hoveredHousehold && !selectedCircle && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 bg-white px-3 py-2 rounded-xl shadow-lg border border-gray-100 z-40"
-          >
-            {(() => {
-              const circle = circles.find(c => c.id === hoveredCircle);
-              const members = friendHouseholds.filter(h => h.circleIds?.includes(hoveredCircle));
-              const available = members.filter(m => m.status.state !== 'busy').length;
-              return (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: circle?.color }}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-[#1F2937]">{circle?.name}</p>
-                    <p className="text-xs text-[#6B7280]">{available} of {members.length} available</p>
-                  </div>
-                </div>
-              );
-            })()}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Selected circle panel */}
-      <AnimatePresence>
-        {selectedCircle && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-4 py-3 rounded-t-2xl shadow-lg border-t border-gray-100 z-50"
-          >
-            {(() => {
-              const circle = circles.find(c => c.id === selectedCircle);
-              const members = friendHouseholds.filter(h => h.circleIds?.includes(selectedCircle));
-              const available = members.filter(m => m.status.state !== 'busy');
-              return (
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: circle?.color }}
-                      />
-                      <h3 className="font-semibold text-[#1F2937]">{circle?.name}</h3>
-                      <span className="text-xs text-[#6B7280]">({members.length} members)</span>
-                    </div>
-                    <button
-                      onClick={() => handleCircleClick(selectedCircle)}
-                      className="text-xs text-[#6B7280] hover:text-[#1F2937]"
-                    >
-                      Close
-                    </button>
-                  </div>
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {members.map(member => (
-                      <button
-                        key={member.id}
-                        onClick={() => onSelectHousehold(member)}
-                        className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0"
-                      >
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-lg">
-                            {member.members?.[0]?.avatar || '👤'}
-                          </div>
-                          <StatusDot status={member.status?.state} size="sm" className="absolute -bottom-0.5 -right-0.5" />
-                        </div>
-                        <span className="text-xs text-[#1F2937] font-medium max-w-[60px] truncate">
-                          {member.householdName?.replace(/^The\s+/i, '').split(' ')[0]}
-                        </span>
-                      </button>
-                    ))}
-                    {members.length === 0 && (
-                      <p className="text-sm text-[#6B7280] py-2">No members in this circle yet</p>
-                    )}
-                  </div>
-                  {available.length > 0 && (
-                    <p className="text-xs text-green-600 mt-2">
-                      {available.length} available to hang out
-                    </p>
-                  )}
-                </div>
-              );
-            })()}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

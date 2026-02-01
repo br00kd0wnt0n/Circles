@@ -291,6 +291,7 @@ export function UnifiedHomeCircles({
   onCreateHangout,
   onOpenSettings,
   onOpenContacts,
+  onOpenCircles,
   introRevealed = true, // Controls intro animation
   weather = 'sunny',
   temperature = 72
@@ -490,7 +491,7 @@ export function UnifiedHomeCircles({
           initial={{ opacity: 0 }}
           animate={{ opacity: introRevealed ? 1 : 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.25 }}
-          className="flex-shrink-0 flex items-center gap-2 px-4 mb-2 overflow-x-auto"
+          className="flex-shrink-0 flex flex-wrap items-center gap-2 px-4 mb-2"
         >
           <span className="text-xs font-medium flex-shrink-0" style={{ color: theme.textSecondary }}>
             Circles:
@@ -501,7 +502,7 @@ export function UnifiedHomeCircles({
               <button
                 key={circle.id}
                 onClick={() => setSelectedCircle(circle.id)}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80 flex-shrink-0"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors active:opacity-80"
                 style={{ backgroundColor: `${circle.color}20`, color: circle.color }}
               >
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: circle.color }} />
@@ -516,7 +517,7 @@ export function UnifiedHomeCircles({
       {/* Contacts area with circle outlines */}
       <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-visible -mt-4">
         <div className="relative aspect-square max-w-[340px] max-h-[85%] mx-auto" style={{ width: 'min(100% - 32px, 340px)' }}>
-          {/* Empty State - No Friends */}
+          {/* Empty State */}
           {liveHouseholds.length === 0 && introRevealed && (
             <motion.div
               className="absolute inset-0 flex flex-col items-center justify-center text-center px-8"
@@ -524,22 +525,45 @@ export function UnifiedHomeCircles({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
             >
-              <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: `${theme.primary}20` }}>
-                <span className="text-4xl">+</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2" style={{ color: theme.text }}>
-                Add your first friends
-              </h3>
-              <p className="text-sm mb-6" style={{ color: theme.textSecondary }}>
-                Connect with friends and family to see when they're available to hang out
-              </p>
-              <button
-                onClick={onOpenContacts}
-                className="px-6 py-3 rounded-xl font-medium text-white transition-colors"
-                style={{ backgroundColor: theme.primary }}
-              >
-                Add Friends
-              </button>
+              {circles.length === 0 ? (
+                <>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: `${theme.primary}20` }}>
+                    <span className="text-4xl">🫧</span>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: theme.text }}>
+                    Set up your circles
+                  </h3>
+                  <p className="text-sm mb-6" style={{ color: theme.textSecondary }}>
+                    Create circles to organize friends by group — neighbors, school parents, sports teams
+                  </p>
+                  <button
+                    onClick={onOpenCircles}
+                    className="px-6 py-3 rounded-xl font-medium text-white transition-colors"
+                    style={{ backgroundColor: theme.primary }}
+                  >
+                    Get Started
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: `${theme.primary}20` }}>
+                    <span className="text-4xl">+</span>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: theme.text }}>
+                    Add your first friends
+                  </h3>
+                  <p className="text-sm mb-6" style={{ color: theme.textSecondary }}>
+                    Connect with friends and family to see when they're available to hang out
+                  </p>
+                  <button
+                    onClick={onOpenContacts}
+                    className="px-6 py-3 rounded-xl font-medium text-white transition-colors"
+                    style={{ backgroundColor: theme.primary }}
+                  >
+                    Add Friends
+                  </button>
+                </>
+              )}
             </motion.div>
           )}
 

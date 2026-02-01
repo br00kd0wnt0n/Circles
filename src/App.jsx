@@ -226,6 +226,7 @@ function App() {
               onCreateHangout={handleMakePlans}
               onOpenSettings={() => setShowSettings(true)}
               onOpenContacts={() => setShowContacts(true)}
+              onOpenCircles={() => setShowCircles(true)}
               introRevealed={introRevealed || !showWelcome}
               weather={weather}
               temperature={temperature}
