@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Calendar, Users } from 'lucide-react';
+import { X, MessageCircle, Calendar, Users, Plus } from 'lucide-react';
 import { StatusDot } from '../ui/StatusDot';
 import { CircleBadge } from '../ui/CircleBadge';
 import { Button } from '../ui/Button';
@@ -12,7 +13,8 @@ const statusLabels = {
 };
 
 export function HouseholdDetail({ household, isOpen, onClose, onInvite }) {
-  const { circles } = useData();
+  const { circles, updateCircle } = useData();
+  const [showCirclePicker, setShowCirclePicker] = useState(false);
 
   if (!household) return null;
 
@@ -99,16 +101,66 @@ export function HouseholdDetail({ household, isOpen, onClose, onInvite }) {
             </div>
 
             {/* Circles */}
-            {householdCircles.length > 0 && (
-              <div className="px-6 pb-4">
-                <p className="text-sm font-medium text-[#6B7280] mb-2">Shared Circles</p>
-                <div className="flex gap-2">
-                  {householdCircles.map(circle => (
-                    <CircleBadge key={circle.id} name={circle.name} color={circle.color} size="md" />
-                  ))}
-                </div>
+            <div className="px-6 pb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-[#6B7280]">Circles</p>
+                <button
+                  onClick={() => setShowCirclePicker(!showCirclePicker)}
+                  className="text-xs text-[#9CAF88] font-medium flex items-center gap-1"
+                >
+                  <Plus size={14} />
+                  {showCirclePicker ? 'Done' : 'Edit'}
+                </button>
               </div>
-            )}
+              {showCirclePicker ? (
+                <div className="flex flex-wrap gap-2">
+                  {(circles || []).map(circle => {
+                    const isInCircle = household.circleIds?.includes(circle.id);
+                    return (
+                      <button
+                        key={circle.id}
+                        onClick={async () => {
+                          const currentMemberIds = circle.memberIds || [];
+                          const newMemberIds = isInCircle
+                            ? currentMemberIds.filter(id => id !== household.id)
+                            : [...currentMemberIds, household.id];
+                          await updateCircle(circle.id, { memberIds: newMemberIds });
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                          isInCircle
+                            ? 'border-current opacity-100'
+                            : 'border-gray-200 opacity-50'
+                        }`}
+                        style={{
+                          backgroundColor: isInCircle ? `${circle.color}20` : '#f4f4f5',
+                          color: isInCircle ? circle.color : '#6B7280'
+                        }}
+                      >
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: circle.color }}
+                        />
+                        {circle.name}
+                        {isInCircle && <span className="text-xs">✓</span>}
+                      </button>
+                    );
+                  })}
+                  {(!circles || circles.length === 0) && (
+                    <p className="text-sm text-[#6B7280]">No circles yet</p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {householdCircles.length > 0 ? (
+                    householdCircles.map(circle => (
+                      <CircleBadge key={circle.id} name={circle.name} color={circle.color} size="md" />
+                    ))
+                  ) : (
+                    <p className="text-sm text-[#9B9B9B]">Not in any circles yet</p>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Actions */}
             <div className="p-6 pt-2 pb-8 border-t border-gray-100 flex gap-3">

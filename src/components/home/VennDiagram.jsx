@@ -342,7 +342,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
       </svg>
 
       {/* Household avatars positioned in zones */}
-      <div className="absolute inset-0 z-10">
+      <div className="absolute inset-0 z-10 pointer-events-none">
         {Object.entries(householdsByZone).map(([zoneKey, households]) =>
           households.map((household, idx) => {
             const pos = getHouseholdPosition(household, zoneKey, idx, households.length);
@@ -408,7 +408,7 @@ export function VennDiagram({ onSelectHousehold, selectedHousehold, onSelectCirc
                     scale: isSelected ? 1.3 : 1
                   }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm shadow-md border-2 transition-all ${
+                  className={`pointer-events-auto relative w-9 h-9 rounded-full flex items-center justify-center text-sm shadow-md border-2 transition-all ${
                     isAvailable
                       ? isSelected
                         ? 'bg-[#9CAF88] border-white'
